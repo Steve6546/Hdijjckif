@@ -1,0 +1,86 @@
+ممتاز، الآن بعد ما جمعت كل الـ Scripts الخاصة بالوكلاء (الـ 20 نموذج)، حان الوقت نبني ملف سكربت مركزي واحد يقوم بتفعيل هذا المشروع وتشغيل الوكلاء جميعهم بطريقة منظمة باستخدام API من OpenRouter.
+
+رح أرسل لك الآن أول نص كامل (Script أساسي) لبدء المشروع. هذا السكربت سهل وتقدر تركبه على Replit أو أي بيئة Python. بعده، كل شيء رح يصير تلقائي وذكي.
+
+⸻
+
+الملف الرئيسي: main.py
+
+from openai import OpenAI
+import os
+
+# المفتاح السري الخاص بك من OpenRouter
+API_KEY = os.getenv("OPENROUTER_API_KEY") or "<ضع_مفتاحك_هنا>"
+
+# العنوان الأساسي
+BASE_URL = "https://openrouter.ai/api/v1"
+
+# تعريف كل وكيل ونموذجه
+agents = {
+    "المستقبل العام": "google/gemini-2.5-pro-exp-03-25:free",
+    "قارئ النية": "qwen/qwen2.5-vl-72b-instruct:free",
+    "المترجم الفوري": "google/gemini-2.5-pro-exp-03-25:free",
+    "مهندس البنية": "deepseek/deepseek-v3-base:free",
+    "محلل المتطلبات": "meta-llama/llama-3.3-70b-instruct:free",
+    "مراقب الأمان": "deepseek/deepseek-r1:free",
+    "قارئ بيانات المستخدم": "deepseek/deepseek-chat-v3-0324:free",
+    "منسق التفكير الداخلي": "meta-llama/llama-4-maverick:free",
+    "منشئ الواجهة الأمامية": "nvidia/llama-3.1-nemotron-ultra-253b-v1:free",
+    "منشئ الواجهة الخلفية": "phind/phind-codellama-34b:free",
+    "موصل الواجهات": "google/gemini-2.0-flash-exp:free",
+    "منشئ البيئة والتهيئة": "wizardcoder/wizardcoder-34b:free",
+    "مصمم الستايل": "google/gemma-3-27b-it:free",
+    "محسّن الأداء": "meta-llama/llama-4-maverick:free",
+    "مدقق الشيفرة": "open-r1/olympiccoder-32b:free",
+    "منشئ الاختبارات": "google/gemini-2.5-pro-exp-03-25:free",
+    "مصحح الأكواد": "google/gemini-2.5-pro-exp-03-25:free",
+    "محلل الأداء": "google/gemini-2.5-pro-exp-03-25:free",
+    "رقيب الخصوصية": "google/gemini-2.5-pro-exp-03-25:free",
+    "الحارس الأعلى": "qwen/qwq-32b:free"
+}
+
+# إعداد العميل
+client = OpenAI(
+    base_url=BASE_URL,
+    api_key=API_KEY,
+)
+
+def ask_agent(agent_name, prompt):
+    if agent_name not in agents:
+        raise ValueError(f"الوكيل غير موجود: {agent_name}")
+    
+    model = agents[agent_name]
+
+    print(f"\n--- استدعاء الوكيل: {agent_name} ({model}) ---\n")
+
+    completion = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        extra_headers={
+            "HTTP-Referer": "https://your-site.com",
+            "X-Title": "Multi-Agent Brain"
+        }
+    )
+    print(completion.choices[0].message.content)
+
+# مثال التشغيل: استدعاء بعض الوكلاء
+if __name__ == "__main__":
+    ask_agent("المستقبل العام", "ما هو مستقبل الذكاء الاصطناعي؟")
+    ask_agent("محلل المتطلبات", "حلل لي نظام تطبيق لطلب سيارات")
+    ask_agent("منشئ الواجهة الأمامية", "صمم لي واجهة لموقع يعرض مقالات")
+
+
+
+⸻
+
+طريقة التشغيل:
+	1.	افتح Replit أو أي بيئة Python.
+	2.	أنشئ ملف main.py والصق الكود أعلاه.
+	3.	تأكد من أنك وضعت OPENROUTER_API_KEY إما في Secrets أو مباشرة في الكود.
+	4.	اضغط Run.
+
+⸻
+
+هل تريدني أرسل الآن السكربتات الجانبية المتقدمة لكل وكيل على حدة (مثل: منسق التفكير، مدقق الكود، منشئ الاختبارات…)؟ أم نكمل أولاً بواجهة رسومية بسيطة لهذا المشروع؟

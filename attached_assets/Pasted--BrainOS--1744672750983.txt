@@ -1,0 +1,159 @@
+الآن وقد أصبح لديك الهيكل الأساسي لنظام BrainOS، دعنا ننتقل إلى مرحلة التكامل النهائي وتشغيل النظام بالكامل. إليك الخطة النهائية لربط جميع المكونات:
+
+### 1. تكامل نهائي لجميع الوحدات
+```python
+# brain_os/main.py
+import asyncio
+from neural_feedback.feedback_loop import NeuroFeedbackSystem
+from perception.sensory_integration import MultimodalIntegrator
+from planning.hierarchical_planner import CognitivePlanner
+from monitoring.self_awareness import SelfMonitor
+from learning.adaptive_learner import ProgressiveLearner
+
+class IntegratedBrain:
+    def __init__(self):
+        self.feedback_system = NeuroFeedbackSystem()
+        self.sensory_integrator = MultimodalIntegrator()
+        self.planner = CognitivePlanner()
+        self.monitor = SelfMonitor()
+        self.learner = ProgressiveLearner()
+        
+        # تهيئة الوكلاء الفرعيين
+        self.agents = {
+            'perception': self._init_perception_agents(),
+            'cognition': self._init_cognition_agents(),
+            'action': self._init_action_agents()
+        }
+        
+    def _init_perception_agents(self):
+        return {
+            'visual_processor': AgentLoader.load('qwen/qwen2.5-vl-72b-instruct:free'),
+            'audio_analyzer': AgentLoader.load('deepseek/deepseek-v3-base:free')
+        }
+        
+    async def process_cycle(self, input_data):
+        """دورة معالجة كاملة"""
+        # 1. المعالجة الحسية
+        sensory_output = await self.sensory_integrator.process_multimodal_input(input_data)
+        
+        # 2. التخطيط المعرفي
+        plan = self.planner.build_plan(sensory_output)
+        
+        # 3. التنفيذ مع التغذية الراجعة
+        execution_result = await self._execute_plan(plan)
+        
+        # 4. التعلم التكيفي
+        self.learner.online_learning(
+            features=self._extract_features(execution_result),
+            label=self._evaluate_outcome(execution_result)
+        )
+        
+        # 5. تحديث الأوزان العصبية
+        self.feedback_system.update_weights(
+            agent_id='main_loop',
+            performance_metric=self._calculate_performance()
+        )
+        
+        return execution_result
+
+# تشغيل النظام الرئيسي
+if __name__ == "__main__":
+    brain = IntegratedBrain()
+    asyncio.run(brain.process_cycle({
+        'image': 'path/to/input.jpg',
+        'text': 'مطلوب تحليل هذه البيانات'
+    }))
+```
+
+### 2. ملف التهيئة البيئية المتقدم
+```env
+# .env
+OPENROUTER_API_KEY=your_api_key_here
+NEURO_FEEDBACK_RATE=0.85
+SENSORY_INTEGRATION_MODE=advanced
+MAX_CONCURRENT_AGENTS=5
+MEMORY_CAPACITY=100GB
+```
+
+### 3. نظام المراقبة المتكامل
+```python
+# monitoring/dashboard.py
+import streamlit as st
+from prometheus_client import CollectorRegistry, generate_latest
+
+class NeuroDashboard:
+    def __init__(self):
+        self.registry = CollectorRegistry()
+        
+    def display_realtime_metrics(self):
+        st.title('BrainOS Live Monitoring')
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("الاستخدام المعرفي", f"{self._get_cpu_usage()}%")
+        with col2:
+            st.metric("الصحة العصبية", self._get_neural_health())
+        with col3:
+            st.metric("التعلم التراكمي", self._get_learning_progress())
+        
+        st.subheader('التفاعلات العصبية الحيوية')
+        st.plotly_chart(self._generate_synaptic_activity_plot())
+        
+    def _get_cpu_usage(self):
+        return psutil.cpu_percent()
+    
+    def _generate_synaptic_activity_plot(self):
+        # توليد رسم بياني تفاعلي
+        return activity_plot
+```
+
+### 4. أوامر التشغيل النهائية
+```bash
+# تشغيل النظام الأساسي
+python -m brain_os.main --mode=full
+
+# تشغيل لوحة المراقبة
+streamlit run monitoring/dashboard.py
+
+# اختبار النظام الكامل
+pytest tests/integration_tests.py -v
+
+# نسخ احتياطي للذاكرة
+python brain_memory/backup.py --destination=cloud_storage
+```
+
+### 5. خريطة التدفق العصبي النهائية
+```
+المدخلات الحسية → التكامل متعدد الوسائط → التخطيط الهرمي → التنفيذ المتوازي → التغذية الراجعة → التعلم التكيفي → تحديث الأوزان
+```
+
+### الخطوات التالية المقترحة:
+1. **اختبار ضغط النظام:** 
+```python
+python stress_tests/cognitive_load_test.py --agents=20 --duration=1h
+```
+
+2. **تحسين الأداء:**
+```python
+from optimizers.neural_optimizer import ParallelProcessor
+
+optimizer = ParallelProcessor()
+optimizer.apply_quantization()
+optimizer.enable_memory_sharing()
+```
+
+3. **التكامل مع الأجهزة:**
+```python
+from iot_integration import NeuroLink
+
+device = NeuroLink('EEG_HEADSET')
+brain.connect_device(device)
+```
+
+4. **نشر النظام السحابي:**
+```bash
+docker build -t brainos .
+kubectl apply -f deployment/kubernetes_config.yaml
+```
+
+هل تريد التركيز على أي من هذه الجوانب أو لديك متطلبات خاصة لتطوير النظام بشكل أكبر؟

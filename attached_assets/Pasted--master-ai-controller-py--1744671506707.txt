@@ -1,0 +1,90 @@
+نكمل السكربت الكامل الذي يجمع كل الوكلاء ويشغلهم:
+
+⸻
+
+متابعة سكربت master_ai_controller.py
+
+# وكلاء AI مع النماذج المرتبطة
+AGENTS = {
+    "المستقبل العام": "google/gemini-2.5-pro-exp-03-25:free",
+    "قارئ الصور": "qwen/qwen2.5-vl-72b-instruct:free",
+    "الفيلسوف الداخلي": "deepseek/deepseek-v3-base:free",
+    "المفكر العميق": "meta-llama/llama-3.3-70b-instruct:free",
+    "مراقب الأمان": "deepseek/deepseek-r1:free",
+    "قارئ بيانات المستخدم": "deepseek/deepseek-chat-v3-0324:free",
+    "منسق التفكير الداخلي": "meta-llama/llama-4-maverick:free",
+    "منشئ الواجهة الأمامية": "nvidia/llama-3.1-nemotron-ultra-253b-v1:free",
+    "مصمم الستايل": "nvidia/llama-3.1-nemotron-70b-instruct:free",
+    "منشئ الاختبارات": "google/gemini-2.5-pro-exp-03-25:free",
+    "فلاش التحليل السريع": "google/gemini-2.0-flash-exp:free",
+    "كاتب تقارير": "google/gemma-3-27b-it:free",
+    "المهندس الأول": "open-r1/olympiccoder-32b:free",
+    "الحارس الأعلى": "qwen/qwq-32b:free",
+}
+
+# دالة تنفيذ الطلب
+def run_agent(agent_name, message_content, image_url=None):
+    model_id = AGENTS.get(agent_name)
+    if not model_id:
+        return f"Agent '{agent_name}' not found."
+
+    # تحضير الرسالة
+    if image_url:
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": message_content},
+                    {"type": "image_url", "image_url": {"url": image_url}},
+                ]
+            }
+        ]
+    else:
+        messages = [{"role": "user", "content": message_content}]
+
+    # إرسال الطلب إلى OpenRouter
+    completion = client.chat.completions.create(
+        model=model_id,
+        messages=messages,
+        extra_headers={
+            "HTTP-Referer": REFERER,
+            "X-Title": TITLE
+        }
+    )
+
+    return completion.choices[0].message.content
+
+
+# أمثلة تشغيل:
+if __name__ == "__main__":
+    # مثال 1: سؤال نصي فقط
+    response = run_agent("الفيلسوف الداخلي", "ما معنى الحياة؟")
+    print("[الفيلسوف الداخلي]:", response)
+
+    # مثال 2: تحليل صورة
+    response_img = run_agent(
+        "منسق التفكير الداخلي",
+        "ما الموجود في هذه الصورة؟",
+        image_url="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+    )
+    print("[منسق التفكير الداخلي]:", response_img)
+
+
+
+⸻
+
+ماذا تفعل الآن؟
+	1.	أنشئ ملف .env (اختياري) أو ضع مفتاح OpenRouter مباشرة في المتغير API_KEY.
+	2.	ثبت مكتبة OpenAI:
+
+pip install openai
+
+	3.	شغل السكربت:
+
+python master_ai_controller.py
+
+
+
+⸻
+
+هل ترغب أن أُجهز لك أيضاً واجهة واجهة أمامية Web بسيطة (بـ Streamlit أو FastAPI أو Flask) لتوجيه المهام بسهولة لكل وكيل؟

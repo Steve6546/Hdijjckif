@@ -1,0 +1,217 @@
+لنبدأ ببناء المشروع خطوة بخطوة باستخدام نهج عصبي عمودي:
+
+### 1. الهيكل العصبي الأساسي
+```python
+# brain_os/main.py
+import os
+from openai import OpenAI
+from dotenv import load_dotenv
+from communication.message_bus import MessageBus
+from brain_memory.memory_handler import MemoryCore
+
+load_dotenv()
+
+class BrainOS:
+    def __init__(self):
+        self.client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=os.getenv("OPENROUTER_API_KEY")
+        )
+        
+        # النواة العصبية الرئيسية
+        self.neural_columns = {
+            'perception': self.load_agent_column('perception'),
+            'cognition': self.load_agent_column('cognition'),
+            'execution': self.load_agent_column('execution')
+        }
+        
+        self.memory = MemoryCore()
+        self.message_bus = MessageBus()
+
+    def load_agent_column(self, column_type):
+        """تحميل عمود عصبي كامل من الوكلاء"""
+        return {
+            'primary': AgentLoader.load(f"{column_type}_primary"),
+            'secondary': AgentLoader.load(f"{column_type}_secondary"),
+            'validator': AgentLoader.load(f"{column_type}_validator")
+        }
+
+    async def neural_processing(self, input_data):
+        """مسار المعالجة العصبية المتوازية"""
+        # المرحلة 1: الإدراك المتوازي
+        perception_results = await self.parallel_process(
+            self.neural_columns['perception'],
+            input_data
+        )
+        
+        # المرحلة 2: التكامل المعرفي
+        cognitive_synthesis = await self.cognitive_layer(
+            perception_results
+        )
+        
+        # المرحلة 3: التنفيذ المتكامل
+        return await self.execute_actions(cognitive_synthesis)
+
+    async def cognitive_layer(self, data):
+        """طبقة التكامل المعرفي"""
+        neural_pathways = [
+            self.message_bus.send('agent_08_integrator', data),
+            self.message_bus.send('agent_12_analyst', data),
+            self.message_bus.send('agent_05_validator', data)
+        ]
+        return await self.merge_neural_pathways(neural_pathways)
+
+# التشغيل الأولي للدماغ
+if __name__ == "__main__":
+    brain = BrainOS()
+    asyncio.run(brain.neural_processing("بدء التشغيل العصبي الأولي"))
+```
+
+### 2. نظام الذاكرة العصبي المتقدم
+```python
+# brain_memory/memory_handler.py
+from datetime import datetime
+import hashlib
+
+class MemoryCore:
+    def __init__(self):
+        self.episodic = {}  # الذاكرة العرضية
+        self.semantic = {}   # الذاكرة الدلالية
+        self.procedural = {} # الذاكرة الإجرائية
+
+    def store_memory(self, memory_type, data):
+        """تخزين الذكريات بأنواعها"""
+        memory_id = self._generate_neural_hash(data)
+        
+        if memory_type == 'episodic':
+            self.episodic[memory_id] = {
+                'timestamp': datetime.now(),
+                'data': data,
+                'emotional_weight': self.calculate_emotional_impact(data)
+            }
+        elif memory_type == 'semantic':
+            self.semantic[memory_type] = data
+
+    def _generate_neural_hash(self, data):
+        """إنشاء بصمة عصبية فريدة"""
+        return hashlib.sha3_256(
+            f"{datetime.now().timestamp()}{str(data)}".encode()
+        ).hexdigest()
+
+    def calculate_emotional_impact(self, data):
+        """محاكاة تأثير عاطفي باستخدام نموذج Qwen"""
+        # ... كود اتصال بالنموذج ...
+```
+
+### 3. نظام الاتصال العصبي السريع
+```python
+# communication/message_bus.py
+import asyncio
+from collections import defaultdict
+
+class NeuralMessageBus:
+    def __init__(self):
+        self.synaptic_connections = defaultdict(list)
+        self.neurotransmitters = {
+            'dopamine': self._reward_signal,
+            'serotonin': self._inhibition_signal
+        }
+
+    async def broadcast(self, signal_type, message):
+        """بث إشارات عصبية جماعية"""
+        tasks = []
+        for neuron in self.synaptic_connections[signal_type]:
+            tasks.append(neuron.process(message))
+        await asyncio.gather(*tasks)
+
+    def add_connection(self, signal_type, neuron):
+        """إضافة اتصال عصبي جديد"""
+        self.synaptic_connections[signal_type].append(neuron)
+
+    async def _reward_signal(self, intensity):
+        """محاكاة نظام المكافأة العصبي"""
+        await self.broadcast('reinforcement', f"reward_{intensity}")
+
+    async def _inhibition_signal(self, intensity):
+        """محاكاة نظام التثبيط العصبي"""
+        await self.broadcast('inhibition', f"inhibit_{intensity}")
+```
+
+### 4. نموذج وكيل عصبي أساسي
+```python
+# agents/agent_01_director.py
+from openai import OpenAI
+import neurokit as nk  # مكتبة افتراضية للمحاكاة العصبية
+
+class CerebralDirector:
+    def __init__(self, api_key):
+        self.client = OpenAI(api_key=api_key)
+        self.neural_config = {
+            'activation_threshold': 0.7,
+            'plasticity_factor': 0.3
+        }
+
+    async def process_input(self, neural_input):
+        """معالجة الإدخال باستخدام ديناميكيات عصبية"""
+        # محاكاة نشاط عصبي
+        activity = nk.simulate_neuronal_activity(
+            input_data=neural_input,
+            config=self.neural_config
+        )
+        
+        # اتخاذ القرار عبر نموذج DeepSeek
+        decision = await self.client.chat.completions.create(
+            model="deepseek/deepseek-v3-base:free",
+            messages=[{"role": "system", "content": f"Neural activity: {activity}"}]
+        )
+        
+        return self._apply_neuroplasticity(decision.choices[0].message.content)
+
+    def _apply_neuroplasticity(self, response):
+        """تطبيق المرونة العصبية على الاستجابة"""
+        return f"NEURO-ADAPTIVE: {response}"
+```
+
+### 5. خريطة التوصيل العصبي
+```bash
+# neural_map.json
+{
+  "neural_columns": {
+    "perception": {
+      "agents": ["visual_cortex", "auditory_processor"],
+      "model": "qwen/qwen2.5-vl-72b-instruct:free"
+    },
+    "cognition": {
+      "agents": ["logical_reasoner", "emotional_analyst"],
+      "model": "meta-llama/llama-3.3-70b-instruct:free"
+    },
+    "execution": {
+      "agents": ["motor_cortex", "verbal_processor"],
+      "model": "deepseek/deepseek-chat-v3-0324:free"
+    }
+  },
+  "neurotransmitters": ["dopamine", "serotonin", "glutamate"],
+  "plasticity_level": 0.85
+}
+```
+
+### 6. أوامر التشغيل العصبي
+```bash
+# تشغيل النظام الأساسي
+python -m brain_os.main --neuro-mode=advanced
+
+# مراقبة النشاط العصبي
+neuro_monitor --port 9090 --metrics neuronal_activity,synaptic_strength
+
+# اختبار التوصيلات العصبية
+neuro_test --column perception --test-type stress
+```
+
+هذا النظام يدمج:
+1. محاكاة الديناميكيات العصبية البيولوجية
+2. تكامل مع نماذج الذكاء الحديثة
+3. نظام ذاكرة متعدد الطبقات
+4. اتصال عصبي فائق السرعة
+5. مرونة تكيفية تشبه الدماغ البشري
+
+هل تريد التركيز على جزء معين من النظام العصبي أو إضافة طبقات أكثر تعقيدًا؟

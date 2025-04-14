@@ -1,0 +1,142 @@
+بناءً على تحليلي لاحتياجاتك وتفاصيل النظام الذي تعمل على تطويره، إليك الخطوات الرئيسية لتنفيذ المشروع بشكل فعّال:
+
+### 1. **تهيئة البيئة التقنية**
+- **تثبيت المكتبات المطلوبة:**
+  ```bash
+  pip install openai python-dotenv websockets
+  ```
+- **إعداد ملف البيئة (`.env`):**
+  ```ini
+  OPENROUTER_API_KEY="your_api_key_here"
+  SITE_URL="https://yourdomain.com"
+  SITE_NAME="My AI Platform"
+  ```
+
+### 2. **التكامل بين الوكلاء باستخدام WebSockets**
+```python
+# main_controller.py
+import asyncio
+import websockets
+from agent1 import Agent1
+from agent17 import Agent17
+
+async def handle_request(websocket, path):
+    async for message in websocket:
+        # توجيه المهام حسب نوع الطلب
+        if message.startswith("CODE_CORRECTION"):
+            response = await Agent17.correct_code(message)
+            await websocket.send(response)
+        
+        elif message.startswith("IMAGE_ANALYSIS"):
+            response = await Agent2.analyze_image(message)
+            await websocket.send(response)
+
+# تشغيل الخادم
+start_server = websockets.serve(handle_request, "localhost", 8765)
+asyncio.get_event_loop().run_until_complete(start_server)
+```
+
+### 3. **نموذج مُحسّن لوكيل تصحيح الأكواد (Agent 17)**
+```python
+# agent17.py
+from openai import OpenAI
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Agent17:
+    @staticmethod
+    async def correct_code(code_input):
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+        )
+
+        completion = client.chat.completions.create(
+            extra_headers={
+                "HTTP-Referer": os.getenv("SITE_URL"),
+                "X-Title": os.getenv("SITE_NAME"),
+            },
+            model="google/gemini-2.5-pro-exp-03-25:free",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "أنت مصحح أكواد خبير. قم بتحليل الأخطاء وقدم الحلول مع شرح تفصيلي."
+                },
+                {
+                    "role": "user",
+                    "content": f"صحح الكود التالي وأظهر الأخطاء:\n{code_input}"
+                }
+            ]
+        )
+        return completion.choices[0].message.content
+```
+
+### 4. **نظام أتمتة الاختبارات**
+```python
+# test_runner.py
+import unittest
+from agent17 import Agent17
+
+class CodeCorrectionTests(unittest.TestCase):
+    def test_python_syntax(self):
+        test_code = "print('Hello World'"
+        result = Agent17.correct_code(test_code)
+        self.assertIn("Missing parenthesis", result)
+
+if __name__ == "__main__":
+    unittest.main()
+```
+
+### 5. **نصائح حيوية للنجاح**
+1. **الأمان:** 
+   - استخدم HTTPS لجميع الاتصالات
+   - ضع معدل استدعاء (rate limiting) للوكلاء الحساسة
+
+2. **المراقبة:**
+   ```python
+   # monitoring_dashboard.py
+   import prometheus_client
+   from prometheus_client import start_http_server, Counter
+
+   REQUESTS_COUNTER = Counter('agent_requests', 'Total API requests')
+
+   def track_request(agent_id):
+       REQUESTS_COUNTER.labels(agent_id).inc()
+   ```
+
+3. **التكامل المتقدم:**
+   - استخدم RabbitMQ لإدارة طوابير المهام
+   - نفّذ نظام Fallback للنماذج الاحتياطية
+
+### 6. **خطوات التشغيل**
+```bash
+# 1. تشغيل خادم الويب سوكيت
+python main_controller.py
+
+# 2. تشغيل واجهة المستخدم
+python frontend.py
+
+# 3. تشغيل نظام المراقبة
+python monitoring_dashboard.py
+```
+
+### 7. **استكشاف الأخطاء الشائعة**
+- **مشكلة:** `401 Unauthorized`
+  **الحل:** تأكد من:
+  ```python
+  print(os.getenv("OPENROUTER_API_KEY")) # يجب أن يعرض المفتاح الصحيح
+  ```
+
+- **مشكلة:** `Model Not Found`
+  **الحل:** تحقق من:
+  - أسماء النماذج في [قائمة النماذج المدعومة](https://openrouter.ai/models)
+  - تحديث مكتبة `openai`
+
+لضمان عمل النظام بكفاءة، أنصح بـ:
+1. إضافة طبقة تحقق من المدخلات
+2. استخدام التخزين المؤقت للاستجابات المتكررة
+3. تنفيذ نظام تحميل متوازن بين النماذج
+
+هل تريد مساعدة في أي جزء محدد من التنفيذ؟
