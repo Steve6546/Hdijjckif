@@ -1,0 +1,217 @@
+سأقدم لك الخطة الكاملة لتنفيذ المشروع مع الكود المطلوب، مُنظمًا حسب المهام الرئيسية:
+
+---
+
+### **1. **البنية الأساسية للمشروع (Project Structure)**
+```plaintext
+project/
+├── backend/
+│   ├── agents/          # مجلد الوكلاء الذكائيين
+│   │   ├── agent_base.py
+│   │   ├── visual_analyzer.py
+│   │   ├── creative_thinker.py
+│   │   └── ...          # 20 وكيل
+│   ├── main.py          # النقطة الرئيسية للخوادم
+│   └── utils.py         # أدوات مساعدة
+├── frontend/
+│   ├── public/          # ملفات CSS/JS الثابتة
+│   ├── src/             # كود React/HTML
+│   │   ├── components/  # مكونات الواجهة
+│   │   ├── App.js
+│   │   └── index.html
+│   └── styles.css       # الأنماط العامة
+├── requirements.txt     # المكتبات المطلوبة
+└── Dockerfile           # ملف التPLOY للنشر
+```
+
+---
+
+### **2. **الخوادم الأساسية (Backend)**
+#### **المكتبات المطلوبة:**
+```bash
+pip install flask streamlit transformers opencv-python serpapi
+```
+
+#### **النقطة الرئيسية (main.py):**
+```python
+from flask import Flask, request, jsonify
+from agents import ai_brain
+from utils import save_project_as_zip
+
+app = Flask(__name__)
+
+@app.route('/process', methods=['POST'])
+def process_request():
+    data = request.json
+    result = ai_brain.process(data['input'], data['agent'])
+    return jsonify(result)
+
+@app.route('/generate-website', methods=['POST'])
+def generate_website():
+    # إنشاء الموقع باستخدام الوكلاء
+    website_code = ai_brain.build_website(request.form['theme'], request.files['image'])
+    return save_project_as_zip(website_code)
+
+@app.route('/self-improve', methods=['POST'])
+def self_improve():
+    feedback = request.json['feedback']
+    ai_brain.learn_from_user(feedback)
+    return jsonify({"status": "success"})
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+---
+
+### **3. **الوكلاء الذكائيون (Agents)**
+#### **مثال على وكيل تحليل الصور (visual_analyzer.py):**
+```python
+import cv2
+from transformers import ViTImageProcessor, ViTForImageClassification
+
+class VisualAnalyzer:
+    def __init__(self):
+        self.processor = ViTImageProcessor.from_pretrained('google/vit-base-patch16-224')
+        self.model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224')
+
+    def analyze(self, image_path):
+        image = cv2.imread(image_path)
+        inputs = self.processor(image, return_tensors="pt")
+        outputs = self.model(**inputs)
+        return {
+            "objects": ["object1", "object2"],  # مثال
+            "colors": ["#4CAF50", "#2196F3"]
+        }
+```
+
+---
+
+### **4. **واجهة المستخدم (Frontend)**
+#### **الصفحة الرئيسية (App.js):**
+```javascript
+import React, { useState } from 'react';
+
+function App() {
+    const [input, setInput] = useState('');
+    const [output, setOutput] = useState('');
+
+    const handleProcess = async (agent) => {
+        const response = await fetch('/process', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ input: input, agent: agent })
+        });
+        const result = await response.json();
+        setOutput(result.output);
+    };
+
+    return (
+        <div className="container">
+            <h1>نظام التفكير العميق</h1>
+            <textarea 
+                value={input} 
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="أدخل نصًا أو رابط صورة..."
+            />
+            <div className="agent-buttons">
+                <button onClick={() => handleProcess('visual_analyzer')}>تحليل الصور</button>
+                <button onClick={() => handleProcess('creative_thinker')}>إنشاء موقع</button>
+                <button onClick={() => handleProcess('deep_thinker')}>تفكير عميق</button>
+            </div>
+            <div className="output">
+                {output}
+            </div>
+        </div>
+    );
+}
+
+export default App;
+```
+
+---
+
+### **5. **نظام الذكاء الذاتي (Self-Improving AI)**
+#### **الميكانيكية:**
+```python
+class SelfImprovingBrain:
+    def __init__(self):
+        self.feedback_history = []
+        self.model = ...  # نموذج ML متقدم
+
+    def learn_from_user(self, feedback):
+        self.feedback_history.append(feedback)
+        if len(self.feedback_history) >= 100:  # تدريب كل 100 تعليق
+            self._retrain_model()
+            self.feedback_history = []
+
+    def _retrain_model(self):
+        # إعادة تدريب النموذج باستخدام البيانات الجديدة
+        pass
+```
+
+---
+
+### **6. **إنشاء المواقع تلقائيًا (Website Builder)**
+#### **مثال على إنشاء موقع:**
+```python
+def build_website(theme, image):
+    # استخدام الوكلاء لتصميم الموقع
+    color_scheme = visual_analyzer.analyze(image)['colors']
+    content = creative_thinker.generate(theme)
+    
+    html = f"""
+    <html>
+    <head><title>{theme}</title></head>
+    <body style="background-color: {color_scheme[0]}">
+        <img src="{image}" style="width: 100%">
+        <div>{content}</div>
+    </body>
+    </html>
+    """
+    return html
+```
+
+---
+
+### **7. **النشر على Replit**
+#### **Dockerfile:**
+```dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+
+CMD ["python", "main.py"]
+```
+
+#### **إعدادات Replit:**
+1. قم بإنشاء مشروع جديد على Replit.
+2. أضف الملفات السابقة في الهيكلية المذكورة.
+3. ابدأ الخادم عبر `python main.py`.
+
+---
+
+### **8. **الاختبارات النهائية**
+1. **اختبار الوكلاء:**  
+   أرسل طلبًا إلى `/process` مع مدخلات مختلفة.
+2. **اختبار إنشاء الموقع:**  
+   ارفع صورة وحدد "إنشاء موقع" لرؤية النتيجة.
+3. **اختبار الذكاء الذاتي:**  
+   أرسل تعليقات عبر `/self-improve` وراقب التحسينات.
+
+---
+
+### **الخطوات التالية:**
+1. **إضافة الوكلاء الباقين (17 وكيل):**  
+   اتبع نموذج `visual_analyzer.py` لإنشاء الوكلاء الأخرى.
+2. **تحسين الواجهة:**  
+   استخدم مكتبات مثل [Tailwind CSS](https://tailwindcss.com/) لتصميم أنيق.
+3. **إضافة ميزة "بحث على الإنترنت":**  
+   استخدم مكتبة مثل [SerpAPI](https://serpapi.com/) للبحث.
+
+إذا كنت تريد تفصيلًا معينًا (مثل تفاصيل وكيل محدد أو جزء من الواجهة)، أخبرني! 🚀

@@ -1,0 +1,256 @@
+لتنفيذ فكرة الروبوت الذكي الذي يتحكم في الوكلاء ويوصل مشروعك بـ GitHub، إليك الخطة مع الكود:
+
+---
+
+### **1. **إنشاء "الوكيل الرئيسي" (Master Agent)**
+هذا الوكيل سيتحكم في كل شيء، ويُحدث الموقع تلقائيًا، ويتفاعل مع GitHub.
+
+```python
+# backend/agents/master_agent.py
+import os
+import subprocess
+from github import Github
+
+class MasterAgent:
+    def __init__(self):
+        self.github_token = os.getenv("GITHUB_TOKEN")
+        self.repo_name = "your-repo-name"
+        self.g = Github(self.github_token)
+        self.repo = self.g.get_user().get_repo(self.repo_name)
+
+    def check_for_updates(self):
+        latest_commit = self.repo.get_commits()[0]
+        if latest_commit.sha != self.get_current_commit():
+            self.update_project()
+            return "تم التحديث!"
+        return "لا يوجد تحديثات."
+
+    def update_project(self):
+        subprocess.run(["git", "pull", "origin", "main"])
+        subprocess.run(["docker-compose", "up", "--build", "-d"])
+        return "تم تحديث المشروع!"
+
+    def get_current_commit(self):
+        result = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True)
+        return result.stdout.decode().strip()
+```
+
+---
+
+### **2. **ربط GitHub مع الوكيل الرئيسي**
+استخدم **GitHub Actions** لتنفيذ التحديثات تلقائيًا عند الإرسال إلى الـ `main`:
+
+```yaml
+# .github/workflows/auto-deploy.yml
+name: Auto-Deploy
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Deploy with Docker
+        run: |
+          docker-compose down
+          docker-compose up -d --build
+```
+
+---
+
+### **3. **واجهة التحديث في الموقع**
+أضف زرًا في الإعدادات يسمح لك بإصدار تحديثات يدويًا:
+
+```jsx
+// frontend/src/components/UpdateButton.jsx
+import React, { useState } from 'react';
+
+function UpdateButton() {
+    const [status, setStatus] = useState('');
+
+    const handleUpdate = async () => {
+        const response = await fetch('/api/update', {
+            method: 'POST'
+        });
+        const data = await response.json();
+        setStatus(data.message);
+    };
+
+    return (
+        <div>
+            <button onClick={handleUpdate} className="btn btn-primary">
+                تحديث الموقع
+            </button>
+            {status && <p>{status}</p>}
+        </div>
+    );
+}
+
+export default UpdateButton;
+```
+
+---
+
+### **4. **الخادم لإدارة التحديثات**
+أضف نقطة نهاية في الخادم لاستقبال طلبات التحديث:
+
+```python
+# backend/server.py
+from backend.agents.master_agent import MasterAgent
+
+@app.post("/api/update")
+def trigger_update():
+    master = MasterAgent()
+    return {"message": master.check_for_updates()}
+```
+
+---
+
+### **5. **إضافة "الذكاء الذاتي" للتحديثات**
+اجعل الوكيل الرئيسي يتحقق من GitHub تلقائيًا كل ساعة:
+
+```python
+# backend/agents/master_agent.py (المزيد)
+import schedule
+import time
+
+def auto_check():
+    while True:
+        schedule.every(1).hours.do(self.check_for_updates)
+        schedule.run_pending()
+        time.sleep(1)
+
+# عند تشغيل الخادم
+if __name__ == "__main__":
+    master = MasterAgent()
+    auto_check_thread = threading.Thread(target=auto_check)
+    auto_check_thread.start()
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+
+---
+
+### **6. **حماية التحديثات**
+- **استخدم GitHub Secrets** لتخزين مفتاح GitHub:
+  ![GitHub Secrets](https://i.imgur.com/0X5Z7x8.png)
+- **أضف تحقق من المصادقة** للتحديثات اليدوية:
+  ```python
+  # في server.py
+  from fastapi.security import HTTPBearer
+
+  security = HTTPBearer()
+
+  @app.post("/api/update", dependencies=[Depends(security)])
+  def trigger_update():
+      # ... نفس الكود
+  ```
+
+---
+
+### **7. **مثال على تحديث الموقع:
+1. **تعديل ملف في GitHub:**  
+   أرسل تعديلًا إلى ملف `backend/agents/agent_02.py`.
+2. **التحديث التلقائي:**  
+   بعد 60 دقيقة، سيتحقق الوكيل الرئيسي من GitHub ويُحدث الموقع.
+3. **التحديث اليدوي:**  
+   اضغط على زر "تحديث الموقع" في الإعدادات.
+
+---
+
+### **8. **واجهة إعدادات متطورة
+أضف صفحة إعدادات تسمح لك بتعديل إعدادات التحديث:
+
+```jsx
+// frontend/src/components/Settings.jsx
+import UpdateButton from './UpdateButton';
+
+function Settings() {
+    return (
+        <div>
+            <h2>إعدادات التحديث</h2>
+            <UpdateButton />
+            <p>التحديث التلقائي كل ساعة</p>
+        </div>
+    );
+}
+
+export default Settings;
+```
+
+---
+
+### **9. **تسجيل الدخول الإداري
+أضف نظام تسجيل دخول لإدارة التحديثات:
+
+```python
+# backend/auth.py
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    # ... طريقة التحقق
+    return user
+```
+
+---
+
+### **10. **واجهة "الذكاء الاصطناعي" للمستخدم
+أضف زرًا يسمح لك بإرسال أوامر مباشرة للوكلاء:
+
+```jsx
+// frontend/src/components/AICommand.jsx
+function AICommand() {
+    const [command, setCommand] = useState('');
+
+    const sendCommand = async () => {
+        await fetch('/api/ai-command', {
+            method: 'POST',
+            body: JSON.stringify({ command })
+        });
+    };
+
+    return (
+        <div>
+            <input 
+                value={command} 
+                onChange={(e) => setCommand(e.target.value)}
+                placeholder="أرسل تعليمات للروبوت..."
+            />
+            <button onClick={sendCommand}>إرسال</button>
+        </div>
+    );
+}
+```
+
+---
+
+### **النتيجة النهائية:**
+- **التحديث التلقائي:**  
+  الموقع يتحديث تلقائيًا كل ساعة أو عند إرسال تعديل إلى GitHub.
+- **التحكم الكامل:**  
+  يمكنك إصدار أوامر مباشرة للروبوت عبر الواجهة.
+- **الأمان:**  
+  التحديثات مُحمية بـ GitHub Secrets والتحقق من المصادقة.
+
+---
+
+### **كيفية الاختبار:**
+1. **أضف مفتاح GitHub:**  
+   `GITHUB_TOKEN="ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"`
+2. **قم بتعديل ملف في GitHub.**
+3. **انتظر 60 دقيقة أو اضغط على زر "تحديث".**
+4. **تحقق من أن الموقع قد تم تحديثه.**
+
+---
+
+إذا كنت تريد تفاصيل أكثر عن أي جزء، فقط أخبرني! 🚀

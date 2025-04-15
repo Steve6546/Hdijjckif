@@ -1,0 +1,224 @@
+سأقدم لك هيكل ملفات مشروعك الكامل، مع الكود المطلوب لتنفيذ الوكلاء الذكائيين داخل الموقع، بحيث يعملون كـ "ساكنين ذكاء اصطناعي" يطورون الموقع لحظة بلحظة.
+
+---
+
+### **هيكل المشروع الكامل:**
+```plaintext
+brainos/
+├── backend/
+│   ├── agents/          # مجلد الوكلاء الذكائيين
+│   │   ├── __init__.py
+│   │   ├── agent_01.py (المستقبل العام)
+│   │   ├── agent_02.py (منشئ الواجهة)
+│   │   └── ... (حتى agent_20.py)
+│   ├── memory/          # ذاكرة النظام
+│   │   └── memory.json
+│   ├── server.py        # خادم الوكالات (FastAPI)
+│   └── config.py        # إعدادات المفاتيح
+├── frontend/
+│   ├── public/          # ملفات CSS/JS الثابتة
+│   ├── src/             # كود React
+│   │   ├── components/  # مكونات مثل "زر التحديث الذاتي"
+│   │   ├── services/    # خدمات WebSocket
+│   │   └── App.jsx
+│   └── styles/          # الأنماط
+├── Dockerfile           # للنشر على Replit أو سحابة
+└── .env                 # مفاتيح API
+```
+
+---
+
+### **الكود المطلوب:**
+
+#### **1. **خادم الوكالات (backend/server.py):**
+```python
+# backend/server.py
+from fastapi import FastAPI, WebSocket
+from backend.agents import *
+from backend.memory import Memory
+import uvicorn
+
+app = FastAPI()
+memory = Memory()
+
+@app.websocket("/ws/{agent_id}")
+async def websocket_endpoint(websocket: WebSocket, agent_id: str):
+    await websocket.accept()
+    while True:
+        data = await websocket.receive_text()
+        agent = get_agent_by_id(agent_id)
+        response = agent.process(data)
+        await websocket.send_text(response)
+
+@app.post("/api/action")
+async def handle_action(request: dict):
+    action = request.get("action")
+    agent_id = request.get("agent_id")
+    agent = get_agent_by_id(agent_id)
+    return agent.process(action)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+
+---
+
+#### **2. **مثال على وكيل "منشئ الواجهة" (backend/agents/agent_02.py):**
+```python
+# backend/agents/agent_02.py
+class FrontendBuilder:
+    def process(self, user_input):
+        # استخدام نموذج ذكاء اصطناعي لتصميم واجهة
+        from openrouter import OpenRouterClient
+        client = OpenRouterClient(api_key="YOUR_KEY")
+        
+        prompt = f"صمم واجهة موقع إلكتروني بناءً على: {user_input}"
+        response = client.completion(
+            model="deepseek-coder",
+            prompt=prompt
+        )
+        
+        # حفظ الكود في الملفات
+        with open("frontend/src/components/NewDesign.jsx", "w") as f:
+            f.write(response.choices[0].text)
+        
+        return "تم تصميم الواجهة!"
+```
+
+---
+
+#### **3. **واجهة المستخدم (frontend/App.jsx):**
+```jsx
+// frontend/src/App.jsx
+import React, { useState, useEffect } from 'react';
+import { WebSocket } from 'ws';
+
+function App() {
+    const [message, setMessage] = useState('');
+
+    useEffect(() => {
+        const ws = new WebSocket('ws://localhost:8000/ws/agent_01');
+        ws.onmessage = (event) => setMessage(event.data);
+    }, []);
+
+    return (
+        <div className="bg-gray-900 text-white">
+            <h1>موقعك الذكي</h1>
+            <button 
+                onClick={() => fetch("/api/action", {
+                    method: "POST",
+                    body: JSON.stringify({ action: "تحديث الموقع" })
+                })}
+            >
+                تطوير الموقع تلقائيًا
+            </button>
+            <div className="mt-4">
+                {message}
+            </div>
+        </div>
+    );
+}
+
+export default App;
+```
+
+---
+
+#### **4. **ذاكرة النظام (backend/memory/memory.json):**
+```json
+{
+    "last_design": "dark_theme",
+    "user_actions": [
+        {"action": "Visited Home", "time": "2024-02-20"}
+    ],
+    "agent_logs": []
+}
+```
+
+---
+
+#### **5. **مثال على وكيل "مُحسن الأداء" (backend/agents/agent_15.py):**
+```python
+# backend/agents/agent_15.py
+import os
+
+class PerformanceOptimizer:
+    def process(self):
+        # تحسين كود الموقع
+        os.system("npm run optimize")
+        return "تم تحسين الأداء!"
+```
+
+---
+
+#### **6. **Dockerfile للنشر على Replit:**
+```dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+
+CMD ["uvicorn", "backend/server:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+---
+
+### **كيف يعمل المشروع؟**
+1. **عند تشغيل الموقع:**  
+   يبدأ الخادم (backend/server.py) ويُنشئ قنوات WebSocket للوكلاء.
+2. **عند الضغط على "تطوير الموقع":**  
+   - يُرسل الطلب إلى الوكيل الأول (المستقبل العام).
+   - يُوجّه الطلب إلى الوكيل الثاني (منشئ الواجهة) لتصميم واجهة جديدة.
+   - يُحفظ الكود الجديد في مجلد frontend/.
+3. **التحديث الذاتي:**  
+   - الوكيل 15 (مُحسن الأداء) يُحسّن الكود تلقائيًا.
+   - الوكيل 20 (الحارس الأعلى) يراقب الأمان ويمنع الأخطاء.
+4. **الذاكرة المشتركة:**  
+   - كل وكيل يضيف معلومات إلى memory/memory.json لمشاركة البيانات مع الآخرين.
+
+---
+
+### **الخطوات لتشغيل المشروع:**
+1. **تثبيت المكتبات:**  
+   ```bash
+   pip install fastapi uvicorn openrouter-sdk
+   npm install react react-dom @types/react
+   ```
+2. **تعديل الملفات:**  
+   - أضف مفتاح OpenRouter في `.env`.
+   - قم ببناء الوكلاء الأخرى (من agent_03 إلى agent_20).
+3. **التشغيل:**  
+   ```bash
+   uvicorn backend.server:app --reload
+   npm start --prefix frontend
+   ```
+
+---
+
+### **مثال على تفاعل الوكلاء:**
+- **الطلب:** "أضف زر جديد للموقع".  
+  - الوكيل 01 (المستقبل) → الوكيل 02 (التصميم) → الوكيل 15 (التحسين) → حفظ الملفات → تحديث الموقع.
+
+---
+
+### **ملاحظة أمنية:**
+- أضف التحقق من الصلاحيات (Access Control) في `backend/server.py` لمنع التعديلات غير المصرح بها.
+
+---
+
+### **التحديثات الذاتية:**
+يمكنك إضافة وكيل يُحدث الموقع تلقائيًا عبر:
+```python
+# backend/agents/agent_20.py
+def auto_update():
+    os.system("git pull origin main")
+    return "تم التحديث من GitHub!"
+```
+
+---
+
+إذا كنت تريد إضافة وكيل محدد أو جزء معين، فقط أخبرني! 🚀
