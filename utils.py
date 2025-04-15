@@ -119,10 +119,11 @@ def save_interaction_log(
     input_text: str,
     agent_responses: Dict[str, str],
     integrated_response: str,
-    image_provided: bool = False
+    image_provided: bool = False,
+    processing_time: float = 0.0
 ) -> None:
     """
-    Save interaction details to a log file for future reference and analysis.
+    Save interaction details to both file system logs and database.
     
     Args:
         session_id (str): Unique session identifier
@@ -130,19 +131,23 @@ def save_interaction_log(
         agent_responses (Dict[str, str]): Responses from individual agents
         integrated_response (str): The final integrated response
         image_provided (bool): Whether an image was part of the input
+        processing_time (float): Total processing time in seconds
     """
     timestamp = datetime.now().isoformat()
-    log_entry = {
-        "timestamp": timestamp,
-        "session_id": session_id,
-        "input": truncate_text(input_text, 500),
-        "image_provided": image_provided,
-        "agent_count": len(agent_responses),
-        "agents_used": list(agent_responses.keys()),
-        "response_length": len(integrated_response)
-    }
     
+    # Save to file system log
     try:
+        log_entry = {
+            "timestamp": timestamp,
+            "session_id": session_id,
+            "input": truncate_text(input_text, 500),
+            "image_provided": image_provided,
+            "agent_count": len(agent_responses),
+            "agents_used": list(agent_responses.keys()),
+            "response_length": len(integrated_response),
+            "processing_time": processing_time
+        }
+        
         log_file = os.path.join("logs", "interactions.jsonl")
         with open(log_file, "a") as f:
             f.write(json.dumps(log_entry) + "\n")
@@ -155,14 +160,45 @@ def save_interaction_log(
             "input_text": input_text,
             "image_provided": image_provided,
             "agent_responses": agent_responses,
-            "integrated_response": integrated_response
+            "integrated_response": integrated_response,
+            "processing_time": processing_time
         }
         
         with open(detailed_log_file, "w") as f:
             json.dump(detailed_log, f, indent=2)
             
     except Exception as e:
-        logger.error(f"Failed to save interaction log: {e}")
+        logger.error(f"Failed to save interaction log to file system: {e}")
+    
+    # Save to database
+    try:
+        # Import here to avoid circular imports
+        from database import store_interaction
+        
+        # Get agent models for each agent
+        from agents import get_agent_details
+        
+        agent_models = {}
+        for agent_name in agent_responses.keys():
+            try:
+                agent_details = get_agent_details(agent_name)
+                agent_models[agent_name] = agent_details.get("model", "unknown")
+            except Exception:
+                agent_models[agent_name] = "unknown"
+        
+        # Store in database
+        store_interaction(
+            session_id=session_id,
+            input_text=input_text,
+            agent_responses=agent_responses,
+            integrated_response=integrated_response,
+            image_provided=image_provided,
+            processing_time=processing_time,
+            agent_models=agent_models
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to save interaction to database: {e}")
         
 def analyze_agent_performance(agent_name: str, response: str) -> Dict[str, Any]:
     """

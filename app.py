@@ -213,17 +213,18 @@ if st.button("Process with AI Brain"):
                     progress_bar.progress(75)
                     status_text.text("Integrating agent responses...")
                     
+                    # Calculate processing time
+                    processing_time = time.time() - start_time
+                    
                     # Log the interaction details
                     save_interaction_log(
                         session_id=session_id,
                         input_text=user_input,
                         agent_responses=results['agent_responses'],
                         integrated_response=results['integrated_response'],
-                        image_provided=image_data is not None
+                        image_provided=image_data is not None,
+                        processing_time=processing_time
                     )
-                    
-                    # Calculate and display performance metrics
-                    processing_time = time.time() - start_time
                     progress_bar.progress(100)
                     status_text.text(f"Processing complete! Time: {processing_time:.2f}s")
                     
