@@ -30,8 +30,20 @@ st.set_page_config(
     page_title="AI Brain Controller System",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': None,
+        'Report a bug': None,
+        'About': None
+    }
 )
+
+# Configure Streamlit to handle server issues
+if not os.environ.get("STREAMLIT_SERVER_PORT"):
+    os.environ["STREAMLIT_SERVER_PORT"] = "5000"
+os.environ["STREAMLIT_SERVER_ADDRESS"] = "0.0.0.0"
+os.environ["STREAMLIT_SERVER_HEADLESS"] = "true"
+os.environ["STREAMLIT_SERVER_ENABLE_CORS"] = "false"
 
 # Use custom CSS
 st.markdown("""

@@ -181,3 +181,8 @@ PATHS = {
 # Create necessary directories if they don't exist
 for path in PATHS.values():
     os.makedirs(path, exist_ok=True)
+
+# Ensure database directories exist
+os.makedirs("cache/responses", exist_ok=True)
+os.makedirs("logs/agents", exist_ok=True)
+os.makedirs("uploads", exist_ok=True)
