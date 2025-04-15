@@ -1,12 +1,31 @@
 import streamlit as st
 import os
 import asyncio
+import time
+import json
+import logging
+from datetime import datetime
 from PIL import Image
 import io
 import base64
+import concurrent.futures
+import uuid
+
 from orchestrator import BrainOrchestrator
-from agents import AGENT_DESCRIPTIONS
-import utils
+from agents import AGENT_DESCRIPTIONS, get_agent_details, get_available_agents, get_vision_compatible_agents
+from utils import encode_image_to_base64, truncate_text, generate_session_id, format_agent_response, get_error_message
+from config import OPENROUTER_API_KEY, SITE_NAME, MAX_CONCURRENT_AGENTS, ALLOWED_EXTENSIONS
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("logs/app.log")
+    ]
+)
+logger = logging.getLogger("brain_app")
 
 # Page configuration
 st.set_page_config(
@@ -34,24 +53,57 @@ st.sidebar.title("🧠 AI Brain Control")
 st.sidebar.subheader("Available Agents")
 selected_agents = {}
 
-# Group agents by category
-agent_categories = {
-    "Perception": ["قارئ الصور", "قارئ النية", "المستقبل العام", "قارئ بيانات المستخدم"],
-    "Analysis": ["الفيلسوف الداخلي", "المفكر العميق", "فلاش التحليل السريع", "محلل المتطلبات"],
-    "Creation": ["منشئ الواجهة الأمامية", "مصمم الستايل", "كاتب تقارير", "منشئ الواجهة الخلفية"],
-    "Validation": ["مراقب الأمان", "المهندس الأول", "منشئ الاختبارات", "مصحح الأكواد"],
-    "Coordination": ["منسق التفكير الداخلي", "الحارس الأعلى", "رقيب الخصوصية", "مهندس البنية"]
-}
+# Show available agent list from config
+available_agents = get_available_agents()
+
+# Create agent categories based on capabilities
+agent_categories = {}
+
+# Create categories dynamically from agent capabilities
+for agent_name in available_agents:
+    agent_details = get_agent_details(agent_name)
+    capabilities = agent_details.get("capabilities", [])
+    
+    # Determine the category based on main capabilities
+    if "image_analysis" in capabilities or "visual" in agent_details.get("description", "").lower():
+        category = "Perception"
+    elif "reasoning" in capabilities or "analysis" in capabilities:
+        category = "Analysis"
+    elif "generation" in capabilities or "creation" in capabilities or "design" in capabilities:
+        category = "Creation"
+    elif "security" in capabilities or "testing" in capabilities or "review" in capabilities:
+        category = "Validation"
+    elif "coordination" in capabilities or "integration" in capabilities or "orchestration" in capabilities:
+        category = "Coordination"
+    else:
+        category = "General"
+    
+    # Add the agent to the appropriate category
+    if category not in agent_categories:
+        agent_categories[category] = []
+    agent_categories[category].append(agent_name)
+
+# Additional filters
+st.sidebar.subheader("Filter Options")
+auto_select = st.sidebar.checkbox("Auto-select appropriate agents", value=True)
+show_vision_only = st.sidebar.checkbox("Show vision-capable agents only", value=False)
 
 # Allow users to select which agents to include
 for category, agents in agent_categories.items():
     st.sidebar.markdown(f"**{category}**")
-    for agent in agents:
-        if agent in AGENT_DESCRIPTIONS:
-            selected_agents[agent] = st.sidebar.checkbox(
-                f"{agent} ({AGENT_DESCRIPTIONS[agent]['model_short']})", 
-                value=agent in ["المستقبل العام", "منسق التفكير الداخلي"]
-            )
+    
+    # Filter by vision capability if requested
+    display_agents = agents
+    if show_vision_only:
+        vision_agents = get_vision_compatible_agents()
+        display_agents = [a for a in agents if a in vision_agents]
+    
+    for agent in display_agents:
+        agent_details = get_agent_details(agent)
+        selected_agents[agent] = st.sidebar.checkbox(
+            f"{agent} - {agent_details.get('description', '')}",
+            value=False  # We'll handle auto-selection in processing
+        )
 
 # Main content area
 st.title("🧠 Multi-Agent AI Orchestration System")
