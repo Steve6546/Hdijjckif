@@ -1,31 +1,49 @@
-from ai_agents import DesignAgent, ExecutionAgent, UpdateAgent, SecurityAgent
+import logging
+# Import necessary agent classes - adjust imports as needed based on actual file structure
+# Assuming DesignAgent and a hypothetical ExecutionAgent exist in ai_agents.py for this example
+from ai_agents import DesignAgent #, ExecutionAgent
+
+logger = logging.getLogger("agent_factory")
 
 class AgentFactory:
-    def create_agent(agent_type, master_agent=None):
-        if agent_type == "design":
-            return DesignAgent()
-        elif agent_type == "execution":
-            return ExecutionAgent()
-        elif agent_type == "update":
-            if not master_agent:
-                raise ValueError("Master agent is required for UpdateAgent")
-            return UpdateAgent(master_agent)
-        elif agent_type == "security":
-            if not master_agent:
-                raise ValueError("Master agent is required for SecurityAgent")
-            return SecurityAgent(master_agent)
-        else:
-            raise ValueError(f"Unknown agent type: {agent_type}")
+    """
+    Factory class for creating different types of agents based on feedback example.
+    Note: This version is simpler and does not handle dependencies like OpenRouterClient.
+    """
+    def create_agent(self, agent_type: str):
+        """
+        Creates an agent instance based on the specified type.
 
+        Args:
+            agent_type: The type of agent to create (e.g., 'design', 'execution').
+
+        Returns:
+            An instance of the requested agent, or None if the type is unknown.
+        """
+        logger.info(f"Request to create agent of type: {agent_type}")
+        if agent_type == "design":
+            # Assumes DesignAgent does not require specific initialization arguments here
+            return DesignAgent()
+        # Example for another agent type mentioned in feedback snippet
+        # elif agent_type == "execution":
+        #     return ExecutionAgent()
+        # Add other agent types from the feedback or project needs here
+        # elif agent_type == "code":
+        #     from ai_agents import CodeAgent # Assuming CodeAgent exists
+        #     return CodeAgent()
+        else:
+            logger.warning(f"Unknown agent type requested: {agent_type}")
+            return None
+
+# Example usage (optional, for testing)
 if __name__ == "__main__":
-    # Example usage (for testing purposes)
-    try:
-        from ai_agents import MasterAgent
-        master = MasterAgent()
-        design_agent = AgentFactory.create_agent("design")
-        update_agent = AgentFactory.create_agent("update", master)
-        print("Agents created successfully.")
-    except ValueError as e:
-        print(f"Error: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+    factory = AgentFactory()
+    print("Creating agents using the simpler factory...")
+
+    design_agent = factory.create_agent("design")
+    # execution_agent = factory.create_agent("execution") # Uncomment if ExecutionAgent exists
+    unknown_agent = factory.create_agent("unknown")
+
+    print(f"Design Agent created: {design_agent is not None}")
+    # print(f"Execution Agent created: {execution_agent is not None}")
+    print(f"Unknown Agent created: {unknown_agent is None}")

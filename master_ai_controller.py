@@ -22,6 +22,8 @@ try:
     from orchestrator import BrainOrchestrator
     from agents import get_agent_details, get_available_agents
     from utils import generate_session_id
+    # Corrected import path for NLPAgent
+    from agents.nlp_agent import NLPAgent
 
     # Import specialized components
     from scripts.brainos_core import BrainOSCore
@@ -85,6 +87,8 @@ class MasterAIController:
         # Track system state
         self.system_state = "initializing"
         self.last_activity = datetime.now()
+        self.nlp_agent = NLPAgent() # Initialize NLP Agent
+        logger.info("NLPAgent initialized.")
         self.system_state = "running"
 
         # Start the system
@@ -116,12 +120,19 @@ class MasterAIController:
         self.last_activity = datetime.now()
 
         try:
-            # Prepare the request data
+            # Process text with NLP Agent if text is present
+            nlp_result = None
+            if text:
+                nlp_result = self.nlp_agent.process(text)
+                logger.info(f"NLP Agent Result: {nlp_result}")
+
+            # Prepare the request data, including NLP result
             request = {
                 "text": text or "",
                 "image_url": image_data,
                 "session_id": self.session_id,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
+                "nlp_result": nlp_result # Include NLP result
             }
 
             # Determine the optimal processing mode if set to auto
@@ -170,9 +181,6 @@ class MasterAIController:
 
         Args:
             image_data: Base64 encoded image data
-
-        Returns:
-            Analysis results
         """
         if not self.core_available:
             raise ValueError("BrainOS Core not available")

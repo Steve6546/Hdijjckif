@@ -1,4 +1,11 @@
 fastapi
-uvicorn
-PyGithub
-openrouter
+uvicorn[standard] # Include standard dependencies like pydantic, email_validator
+Pillow # Keep for potential future image handling or if needed by other parts
+sqlite3 # Keep for logger
+python-jose[cryptography] # For JWT
+passlib[bcrypt] # For password hashing
+redis # For caching
+transformers # For AdvancedAI agent
+torch # Backend for transformers (can be large)
+# tensorflow # Alternative backend for transformers (also large)
+python-dotenv # For loading .env files

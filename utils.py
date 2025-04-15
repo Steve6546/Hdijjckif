@@ -219,3 +219,37 @@ def analyze_agent_performance(agent_name: str, response: str) -> Dict[str, Any]:
         "has_lists": "- " in response or "* " in response,
         "timestamp": datetime.now().isoformat()
     }
+
+import zipfile
+
+def zip_files(file_paths: List[str], zip_name: str) -> bool:
+    """
+    Creates a zip archive containing the specified files.
+
+    Args:
+        file_paths: A list of paths to the files to be included in the zip.
+        zip_name: The desired name (including path) for the output zip file.
+
+    Returns:
+        True if the zip file was created successfully, False otherwise.
+    """
+    try:
+        with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for file_path in file_paths:
+                if os.path.exists(file_path):
+                    # Add file to the zip using its base name to avoid including full path structure
+                    zipf.write(file_path, os.path.basename(file_path))
+                    logger.info(f"Added {file_path} to {zip_name}")
+                else:
+                    logger.warning(f"File not found, skipping: {file_path}")
+        logger.info(f"Successfully created zip file: {zip_name}")
+        return True
+    except FileNotFoundError as e:
+        logger.error(f"Error creating zip file {zip_name}: Input file not found - {e}")
+        return False
+    except zipfile.BadZipFile as e:
+         logger.error(f"Error creating zip file {zip_name}: Bad zip file - {e}")
+         return False
+    except Exception as e:
+        logger.error(f"Error creating zip file {zip_name}: {e}", exc_info=True)
+        return False
