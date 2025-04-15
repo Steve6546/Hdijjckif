@@ -18,10 +18,20 @@ for key, profile in AGENT_PROFILES.items():
     # Convert snake_case to display name
     display_name = " ".join(word.capitalize() for word in key.split('_'))
     
+    # Handle the model values safely
+    model_value = profile.get("model", "")
+    if model_value:
+        try:
+            model_short = model_value.split('/')[-1].split(':')[0]
+        except (AttributeError, IndexError):
+            model_short = str(model_value)
+    else:
+        model_short = "Unknown"
+    
     AGENT_DESCRIPTIONS[name_key] = {
-        "model": profile.get("model"),
-        "model_short": profile.get("model").split('/')[-1].split(':')[0],
-        "description": profile.get("description"),
+        "model": model_value,
+        "model_short": model_short,
+        "description": profile.get("description", ""),
         "supports_vision": "image" in profile.get("input_types", []),
         "capabilities": profile.get("capabilities", [])
     }
