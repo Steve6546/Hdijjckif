@@ -1,0 +1,117 @@
+الحل التفصيلي لمشكلة تكامل النماذج مع OpenRouter.ai:**
+
+### 1. **تأكيد صحة مفتاح API:**
+- تأكد من أن المفتاح `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` مسجل في [OpenRouter.ai](https://openrouter.ai) وله صلاحية استخدام النماذج المجانية.
+- تحقق من عدم تجاوز حد الاستخدام اليومي.
+
+### 2. **تهيئة العميل بشكل مركزي:**
+```python
+from openai import OpenAI
+import os
+
+# تهيئة العميل مرة واحدة وإعادة استخدامه
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_API_KEY")
+)
+```
+
+### 3. **إنشاء نظام إدارة مركزي للوكلاء:**
+```python
+AGENT_CONFIGS = {
+    "gemini_vision": {
+        "model": "google/gemini-2.5-pro-exp-03-25:free",
+        "prompt_template": "analyze this image: {image_url} with description: {text}"
+    },
+    "deepseek_logic": {
+        "model": "deepseek/deepseek-v3-base:free",
+        "prompt_template": "philosophically answer: {text}"
+    }
+}
+
+def process_request(agent_name, input_data):
+    config = AGENT_CONFIGS[agent_name]
+    messages = [{
+        "role": "user",
+        "content": config["prompt_template"].format(**input_data)
+    }]
+    
+    if 'image_url' in input_data:
+        messages[0]["content"] = [
+            {"type": "text", "text": messages[0]["content"]},
+            {"type": "image_url", "image_url": {"url": input_data["image_url"]}}
+        ]
+    
+    return client.chat.completions.create(
+        model=config["model"],
+        messages=messages,
+        extra_headers={
+            "HTTP-Referer": "https://yourdomain.com",
+            "X-Title": "BrainOS Project"
+        }
+    )
+```
+
+### 4. **نظام التعامل مع الأخطاء المتقدم:**
+```python
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
+def safe_api_call(agent_name, input_data):
+    try:
+        return process_request(agent_name, input_data)
+    except Exception as e:
+        handle_error(e)
+        raise
+```
+
+### 5. **مثال تطبيقي لاستخدام متعدد النماذج:**
+```python
+def full_analysis(image_url, question):
+    # تحليل الصورة باستخدام Gemini
+    vision_response = safe_api_call("gemini_vision", {
+        "image_url": image_url,
+        "text": "Describe this image in detail"
+    })
+    
+    # معالجة منطقية باستخدام DeepSeek
+    logic_response = safe_api_call("deepseek_logic", {
+        "text": f"Based on this description: {vision_response.choices[0].message.content} - {question}"
+    })
+    
+    return {
+        "vision_analysis": vision_response.choices[0].message.content,
+        "logical_answer": logic_response.choices[0].message.content
+    }
+```
+
+### 6. **نصائح التشغيل الأساسية:**
+1. **تشغيل الاختبارات:**
+```python
+# اختبار نموذج الرؤية
+print(full_analysis(
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+    "What is the philosophical meaning of this scene?"
+))
+```
+
+2. **مراقبة الاستخدام:**
+```bash
+curl -H "Authorization: Bearer $OPENROUTER_API_KEY" https://openrouter.ai/api/v1/auth/key
+```
+
+### 7. **حل الأخطاء الشائعة:**
+- **خطأ "Invalid response format":**
+  - تأكد من دعم النموذج لصيغة المدخلات (بعض النماذج لا تدعم الصور)
+  - تحقق من صحة تنسيق عنوان الصورة `image_url`
+  
+- **خطأ "Model not found":**
+  - قم بزيارة [قائمة النماذج المدعومة](https://openrouter.ai/models) للتأكد من اسم النموذج
+  - استخدم الأسماء الكاملة مثل `meta-llama/llama-3.3-70b-instruct:free`
+
+### 8. **مثال ملف .env:**
+```ini
+OPENROUTER_API_KEY="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"
+OPENROUTER_REFERER="https://brainos.com"
+OPENROUTER_TITLE="BrainOS v2.0"
+```

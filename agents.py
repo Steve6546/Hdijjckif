@@ -1,124 +1,30 @@
 """
 Agent definitions and management module for the AI Brain orchestration system.
+Contains 20 specialized agents each with their own model and expertise.
 """
+import logging
+from typing import Dict, List, Optional, Any
 
-# Agent descriptions with their corresponding models from OpenRouter.ai
-AGENT_DESCRIPTIONS = {
-    "المستقبل العام": {
-        "model": "google/gemini-2.5-pro-exp-03-25:free",
-        "model_short": "Gemini 2.5 Pro",
-        "description": "General-purpose AI that handles a wide range of tasks and questions",
-        "supports_vision": True
-    },
-    "قارئ الصور": {
-        "model": "qwen/qwen2.5-vl-72b-instruct:free",
-        "model_short": "Qwen VL 72B",
-        "description": "Specialized in visual analysis and recognition",
-        "supports_vision": True
-    },
-    "الفيلسوف الداخلي": {
-        "model": "deepseek/deepseek-v3-base:free",
-        "model_short": "DeepSeek V3",
-        "description": "Provides deep, philosophical insights on complex topics",
-        "supports_vision": False
-    },
-    "المفكر العميق": {
-        "model": "meta-llama/llama-3.3-70b-instruct:free",
-        "model_short": "Llama 3.3 70B",
-        "description": "Specialized in deep reasoning and analysis",
-        "supports_vision": False
-    },
-    "مراقب الأمان": {
-        "model": "deepseek/deepseek-r1:free",
-        "model_short": "DeepSeek R1",
-        "description": "Monitors for security issues and ensures safe operation",
-        "supports_vision": False
-    },
-    "قارئ بيانات المستخدم": {
-        "model": "deepseek/deepseek-chat-v3-0324:free",
-        "model_short": "DeepSeek Chat V3",
-        "description": "Analyzes user data and behavior patterns",
-        "supports_vision": False
-    },
-    "منسق التفكير الداخلي": {
-        "model": "meta-llama/llama-4-maverick:free",
-        "model_short": "Llama 4 Maverick",
-        "description": "Coordinates internal thinking processes and decision making",
-        "supports_vision": True
-    },
-    "منشئ الواجهة الأمامية": {
-        "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1:free",
-        "model_short": "Nemotron Ultra",
-        "description": "Specialized in frontend interface design and development",
-        "supports_vision": False
-    },
-    "مصمم الستايل": {
-        "model": "google/gemma-3-27b-it:free",
-        "model_short": "Gemma 3 27B",
-        "description": "Expert in style design and aesthetic decisions",
-        "supports_vision": True
-    },
-    "منشئ الاختبارات": {
-        "model": "google/gemini-2.5-pro-exp-03-25:free",
-        "model_short": "Gemini 2.5 Pro",
-        "description": "Creates and manages tests and validation processes",
-        "supports_vision": True
-    },
-    "فلاش التحليل السريع": {
-        "model": "google/gemini-2.0-flash-exp:free",
-        "model_short": "Gemini Flash",
-        "description": "Provides quick, real-time analysis and insights",
-        "supports_vision": True
-    },
-    "كاتب تقارير": {
-        "model": "google/gemma-3-27b-it:free",
-        "model_short": "Gemma 3 27B",
-        "description": "Specialized in writing detailed reports and documentation",
-        "supports_vision": False
-    },
-    "المهندس الأول": {
-        "model": "open-r1/olympiccoder-32b:free",
-        "model_short": "OlympicCoder",
-        "description": "Expert in software engineering and architecture",
-        "supports_vision": False
-    },
-    "الحارس الأعلى": {
-        "model": "qwen/qwq-32b:free",
-        "model_short": "QwQ 32B",
-        "description": "Top-level oversight and final decision maker",
-        "supports_vision": False
-    },
-    "محلل المتطلبات": {
-        "model": "meta-llama/llama-3.3-70b-instruct:free",
-        "model_short": "Llama 3.3 70B",
-        "description": "Analyzes requirements and converts them to actionable plans",
-        "supports_vision": False
-    },
-    "منشئ الواجهة الخلفية": {
-        "model": "nvidia/llama-3.1-nemotron-ultra-253b-v1:free",
-        "model_short": "Nemotron Ultra",
-        "description": "Specialized in backend development and architecture",
-        "supports_vision": False
-    },
-    "مصحح الأكواد": {
-        "model": "google/gemini-2.5-pro-exp-03-25:free",
-        "model_short": "Gemini 2.5 Pro",
-        "description": "Reviews and corrects code to ensure quality and functionality",
-        "supports_vision": True
-    },
-    "رقيب الخصوصية": {
-        "model": "google/gemini-2.5-pro-exp-03-25:free",
-        "model_short": "Gemini 2.5 Pro",
-        "description": "Ensures privacy compliance and protects sensitive information",
-        "supports_vision": True
-    },
-    "مهندس البنية": {
-        "model": "deepseek/deepseek-v3-base:free",
-        "model_short": "DeepSeek V3",
-        "description": "Designs system architecture and infrastructure",
-        "supports_vision": False
+from config import AGENT_PROFILES
+
+# Create a custom logger for agent activities
+logger = logging.getLogger("brain_agents")
+logger.setLevel(logging.INFO)
+
+# Convert config-based agent profiles to the agent format used in the app
+AGENT_DESCRIPTIONS = {}
+for key, profile in AGENT_PROFILES.items():
+    name_key = key
+    # Convert snake_case to display name
+    display_name = " ".join(word.capitalize() for word in key.split('_'))
+    
+    AGENT_DESCRIPTIONS[name_key] = {
+        "model": profile.get("model"),
+        "model_short": profile.get("model").split('/')[-1].split(':')[0],
+        "description": profile.get("description"),
+        "supports_vision": "image" in profile.get("input_types", []),
+        "capabilities": profile.get("capabilities", [])
     }
-}
 
 # Agent prompt templates based on their roles
 AGENT_PROMPTS = {

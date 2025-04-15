@@ -1,12 +1,17 @@
 """
 Client for interacting with the OpenRouter.ai API.
+Provides access to 20 different AI models through a unified interface.
 """
 
 import os
 import base64
 import aiohttp
 import asyncio
+import time
 from typing import Dict, List, Optional, Union, Any
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+from config import OPENROUTER_API_KEY, SITE_URL, SITE_NAME
 
 class OpenRouterClient:
     """Client for making API calls to OpenRouter.ai."""
@@ -18,13 +23,15 @@ class OpenRouterClient:
         Args:
             api_key (str, optional): OpenRouter API key. If None, will try to get from environment.
         """
-        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY", "")
+        self.api_key = api_key or OPENROUTER_API_KEY
         self.base_url = "https://openrouter.ai/api/v1"
         self.site_info = {
-            "HTTP-Referer": os.getenv("SITE_URL", "https://brain-orchestrator.streamlit.app"),
-            "X-Title": os.getenv("SITE_NAME", "AI Brain Orchestration")
+            "HTTP-Referer": SITE_URL,
+            "X-Title": SITE_NAME
         }
+        self.max_retries = 3
     
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     async def generate_completion(
         self,
         model: str,
@@ -77,12 +84,15 @@ class OpenRouterClient:
             except Exception as e:
                 raise Exception(f"Error generating completion: {str(e)}")
     
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     async def process_with_agent(
         self,
         agent_model: str,
         text: str,
         system_prompt: str = "You are a helpful assistant.",
-        image_url: Optional[str] = None
+        image_url: Optional[str] = None,
+        temperature: float = 0.7,
+        max_tokens: int = 2000
     ) -> str:
         """
         Process input with a specific agent model.
@@ -92,6 +102,8 @@ class OpenRouterClient:
             text (str): Text input to process
             system_prompt (str): System message to set the context
             image_url (str, optional): URL to an image for vision models
+            temperature (float): Sampling temperature
+            max_tokens (int): Maximum tokens to generate
             
         Returns:
             str: The generated response
@@ -103,13 +115,14 @@ class OpenRouterClient:
         # Add user message based on whether we have an image
         if image_url:
             # Multi-modal content with image
-            messages.append({
+            user_message = {
                 "role": "user",
                 "content": [
                     {"type": "text", "text": text},
                     {"type": "image_url", "image_url": {"url": image_url}}
                 ]
-            })
+            }
+            messages.append(user_message)
         else:
             # Text-only content
             messages.append({
@@ -120,7 +133,9 @@ class OpenRouterClient:
         try:
             response = await self.generate_completion(
                 model=agent_model,
-                messages=messages
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
             )
             
             if (
@@ -136,3 +151,33 @@ class OpenRouterClient:
                 
         except Exception as e:
             raise Exception(f"Error processing with agent {agent_model}: {str(e)}")
+    
+    async def get_model_list(self) -> List[Dict]:
+        """
+        Get a list of available models from OpenRouter.
+        
+        Returns:
+            List[Dict]: Available models and their details
+        """
+        if not self.api_key:
+            raise ValueError("OpenRouter API key is required")
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            **self.site_info
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(
+                    f"{self.base_url}/models",
+                    headers=headers
+                ) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        raise Exception(f"OpenRouter API error: {response.status} - {error_text}")
+                    
+                    data = await response.json()
+                    return data.get("data", [])
+            except Exception as e:
+                raise Exception(f"Error getting model list: {str(e)}")

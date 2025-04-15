@@ -1,0 +1,161 @@
+لنبني نظامًا متكاملًا يشبه ChatGPT مع واجهة جميلة ووكلاء ذكيين داخليين، إليك الحل التفصيلي:
+
+### 1. الهيكل العام للنظام
+```
+brain_os/
+├── main.py                  # نقطة الدخول الرئيسية
+├── agents/                  # مجلد الوكلاء
+│   ├── agent_core.py        # الفئة الأساسية للوكلاء
+│   ├── perception/          # وكلاء الإدراك
+│   ├── cognition/           # وكلاء التفكير
+│   └── action/              # وكلاء التنفيذ
+├── ui/                      # واجهة المستخدم
+│   ├── web_interface.py     # واجهة ويب تفاعلية
+│   └── assets/              # ملفات التصميم
+├── config.py                # إعدادات النظام
+└── utils/                   # أدوات مساعدة
+```
+
+### 2. الفئة الأساسية للوكلاء (agent_core.py)
+```python
+from openai import OpenAI
+import json
+
+class AIAgent:
+    def __init__(self, agent_config):
+        self.client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=agent_config['api_key']
+        )
+        self.model = agent_config['model']
+        self.memory = []
+        
+    def process_input(self, input_data):
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=self._build_messages(input_data),
+                extra_headers={
+                    "HTTP-Referer": "https://brainos.com",
+                    "X-Title": "BrainOS"
+                }
+            )
+            return self._parse_response(response)
+        except Exception as e:
+            return self._error_handler(e)
+
+    def _build_messages(self, input_data):
+        # معالجة متقدمة للمدخلات متعددة الوسائط
+        messages = [{"role": "system", "content": "أنت جزء من نظام BrainOS المتكامل"}]
+        if 'image' in input_data:
+            messages.append({
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": input_data['text']},
+                    {"type": "image_url", "image_url": {"url": input_data['image']}}
+                ]
+            })
+        else:
+            messages.append({"role": "user", "content": input_data['text']})
+        return messages
+```
+
+### 3. نظام الذاكرة الموزع (memory_system.py)
+```python
+import sqlite3
+from datetime import datetime
+
+class NeuralMemory:
+    def __init__(self):
+        self.conn = sqlite3.connect('brain_memory.db')
+        self._create_tables()
+    
+    def _create_tables(self):
+        self.conn.execute('''CREATE TABLE IF NOT EXISTS memories
+             (id TEXT PRIMARY KEY,
+              content TEXT,
+              agent_id TEXT,
+              timestamp DATETIME)''')
+
+    def store_memory(self, memory_id, content, agent_id):
+        self.conn.execute("INSERT INTO memories VALUES (?, ?, ?, ?)",
+                         (memory_id, content, agent_id, datetime.now()))
+        self.conn.commit()
+```
+
+### 4. واجهة المستخدم المتقدمة (web_interface.py)
+```python
+import streamlit as st
+from agents import AgentManager
+
+class BrainOSInterface:
+    def __init__(self):
+        self.agent_manager = AgentManager()
+        st.set_page_config(page_title="BrainOS", layout="wide")
+        
+    def run(self):
+        st.title("🧠 BrainOS - النظام المعرفي المتكامل")
+        
+        with st.sidebar:
+            st.header("إعدادات الوكلاء")
+            self._agent_selection()
+        
+        col1, col2 = st.columns([3, 2])
+        
+        with col1:
+            self._chat_interface()
+            
+        with col2:
+            self._agent_status_panel()
+
+    def _chat_interface(self):
+        input_type = st.radio("نوع المدخلات:", ["نص", "نص + صورة"])
+        user_input = st.text_area("أدخل طلبك:")
+        
+        if input_type == "نص + صورة":
+            uploaded_file = st.file_uploader("رفع صورة", type=["jpg", "png"])
+        
+        if st.button("إرسال"):
+            response = self.agent_manager.process_request({
+                "text": user_input,
+                "image": uploaded_file
+            })
+            st.markdown(f"**الرد:**\n{response}")
+```
+
+### 5. ملف التكوين (config.py)
+```python
+AGENT_CONFIGS = {
+    "perception": {
+        "model": "qwen/qwen2.5-vl-72b-instruct:free",
+        "api_key": "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"
+    },
+    "reasoning": {
+        "model": "meta-llama/llama-3.3-70b-instruct:free",
+        "api_key": "same_key_here"
+    }
+}
+```
+
+### 6. نظام إدارة الأخطاء المتقدم (error_handler.py)
+```python
+class NeuralErrorHandler:
+    ERROR_MAP = {
+        401: "مفتاح API غير صحيح",
+        429: "تجاوز الحد المسموح من الطلبات",
+        503: "النموذج غير متوفر حالياً"
+    }
+    
+    def handle(self, error):
+        error_code = getattr(error, 'status_code', 500)
+        error_msg = self.ERROR_MAP.get(error_code, "خطأ غير معروف")
+        
+        return {
+            "error": True,
+            "code": error_code,
+            "message": f"خطأ في المعالجة: {error_msg}",
+            "suggestion": self._get_suggestion(error_code)
+        }
+    
+    def _get_suggestion(self, code):
+        sugge...

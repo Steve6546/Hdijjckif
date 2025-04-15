@@ -1,0 +1,115 @@
+هم الآن، أنت ترغب في نظام داخلي يتكون من وكلاء متعددين (مثل 20 وكيلًا) الذين يعملون بشكل جماعي ويتواصلون مع بعضهم البعض دون تدخل منك. بمعنى آخر، كل وكيل يتلقى الرسائل ويتفاعل مع الوكلاء الآخرين لحل المهام المشتركة أو حل المشكلات التي قد تظهر ضمن النظام. وكل وكيل سيكون لديه سكربت أو وظيفة مخصصة له، وعندما تُرسل رسالة، الوكلاء المختصين يأخذونها ويديرون التفاعل بينهم.
+
+تنظيم النظام الداخلي للوكلاء
+	1.	التواصل بين الوكلاء:
+	•	كل وكيل يملك دورًا محددًا ويستطيع التواصل مع الوكلاء الآخرين.
+	•	عندما يتم إرسال رسالة (مثل استفسار من المستخدم)، يتم تحديد الوكلاء الذين يجب أن يتعاملوا معها.
+	•	الوكلاء يعملون معًا لحل المسائل المعقدة عن طريق التواصل الداخلي بينهم.
+	2.	وظائف الوكلاء:
+	•	كل وكيل له “سكربت” خاص به يعالج نوعًا معينًا من المهام. الوكلاء يتخصصون في مواضيع معينة مثل التحليل النصي، الفهم الفلسفي، أو تحليل الصور.
+	•	وكلاء يتم تعيينهم وفقًا للرسائل: عندما يتم إرسال رسالة للنظام، يتم اختيار الوكلاء المناسبين بناءً على نوع المهمة.
+	3.	التفاعل بين الوكلاء:
+	•	تفاعل داخلي بين الوكلاء مثل التفكير الجماعي أو التعاون لحل مشكلة معقدة.
+	•	وكل وكيل يتفاعل مع الآخرين عن طريق رسائل أو أوامر خاصة.
+
+كيفية إعداد هذا النظام:
+
+1. هيكل النظام:
+	•	هناك 20 وكيلًا (كل واحد منهم مختص بنوع معين من المهام).
+	•	نظام رسائل داخلي: عندما تُرسل رسالة أو طلب، يتم تحليلها وتوجيهها إلى الوكلاء المناسبين.
+	•	الوكلاء يعملون داخليًا بشكل متوازي للتوصل إلى أفضل حل أو رد.
+
+2. التفاعل بين الوكلاء:
+	•	وكلاء متخصصين: مثلا، وكيل يهتم بالتحليل النصي، وآخر يتعامل مع الصور، وآخر يتعامل مع الأسئلة الفلسفية.
+	•	عند إرسال رسالة أو طلب (مثل “ما هو معنى الحياة؟”)، يتم تحديد الوكلاء المعنيين.
+	•	الوكلاء يتواصلون داخليًا مثلما يعمل عقل بشري، كل وكيل يحل جزءًا من المشكلة، ومن ثم يتم تجميع الحلول والتوصل إلى الرد النهائي.
+
+3. نموذج السكربتات الداخلية:
+
+كل وكيل سيكون لديه سكربت خاص به يستدعي النموذج الذي يعالجه، ثم يتواصل مع الوكلاء الآخرين عندما يحتاجون إلى معلومات أو معالجة إضافية. إليك مثال عن كيفية تنفيذ ذلك:
+
+مثال على وكيل يعمل مع الآخرين:
+
+سكربت لوكيل التحليل الفلسفي:
+
+class Agent:
+    def __init__(self, name, model, task):
+        self.name = name
+        self.model = model
+        self.task = task
+    
+    def process_message(self, message):
+        print(f"{self.name} received message: {message}")
+        
+        # هنا يقوم الوكيل بالتحليل الخاص به
+        result = self.analyze(message)
+        
+        # التواصل مع الوكلاء الآخرين إذا كان يحتاج لمساعدة
+        if self.task == "philosophy" and "meaning" in message:
+            response = self.communicate_with_other_agents(message)
+            return response
+        
+        return result
+    
+    def analyze(self, message):
+        # تنفيذ التحليل بناءً على نموذج الذكاء الاصطناعي
+        return f"Analyzing philosophy: {message}"
+    
+    def communicate_with_other_agents(self, message):
+        # التواصل مع الوكلاء الآخرين لأخذ ردود أو معلومات إضافية
+        return "Collaborating with other agents to finalize the response."
+    
+# تعريف الوكلاء
+philosophy_agent = Agent(name="PhilosophyAgent", model="DeepSeek", task="philosophy")
+text_analysis_agent = Agent(name="TextAnalysisAgent", model="Qwen 32B", task="text")
+
+# إرسال رسالة للوكيل الفلسفي
+response = philosophy_agent.process_message("What is the meaning of life?")
+print(response)
+
+4. التفاعل الداخلي بين الوكلاء:
+	•	الوكلاء يمكنهم التحدث مع بعضهم البعض لحل مشكلة معينة.
+	•	عند إرسال رسالة إلى وكيل معين (مثل “ما هو معنى الحياة؟”)، الوكيل الأول يمكن أن يرسل رسالة إلى وكيل آخر (مثل وكيل الفهم النصي أو وكيل المعالجة البيانية).
+
+مثال على سكربت لتفاعل داخلي بين الوكلاء:
+
+class Agent:
+    def __init__(self, name, task):
+        self.name = name
+        self.task = task
+    
+    def process_message(self, message, other_agents=None):
+        print(f"{self.name} received message: {message}")
+        
+        # إذا كان يحتاج للوكيل الآخر فيقوم بالتواصل
+        if self.name == "PhilosophyAgent" and "meaning" in message:
+            return self.collaborate_with_agents(message, other_agents)
+        
+        return f"{self.name} processed message: {message}"
+    
+    def collaborate_with_agents(self, message, other_agents):
+        responses = []
+        for agent in other_agents:
+            response = agent.process_message(message)
+            responses.append(response)
+        return f"Collaboration responses: {responses}"
+
+# إنشاء الوكلاء
+philosophy_agent = Agent(name="PhilosophyAgent", task="philosophy")
+text_agent = Agent(name="TextAnalysisAgent", task="text")
+
+# تحديد الوكلاء الذين يمكن أن يتعاونوا مع الفيلسوف
+agents_for_collaboration = [text_agent]
+
+# إرسال رسالة للوكلاء
+response = philosophy_agent.process_message("What is the meaning of life?", other_agents=agents_for_collaboration)
+print(response)
+
+5. النتيجة:
+	•	كل وكيل يفهم المهمة الخاصة به.
+	•	عند إرسال رسالة، الوكلاء المعنيون يتفاعلون داخليًا لحل المشكلة.
+	•	السكربتات تُنفذ تلقائيًا حسب الحاجة والمهام، ويمكن لكل وكيل التواصل مع الآخرين.
+
+6. الملاحظات النهائية:
+	•	السكربتات العمودية مخصصة لكل وكيل وتعمل بشكل مستقل ولكنها قادرة على التواصل مع الوكلاء الآخرين.
+	•	الوكلاء يتفاعلون داخل النظام بشكل جماعي ويع...
