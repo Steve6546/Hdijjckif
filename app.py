@@ -1,353 +1,81 @@
-import streamlit as st
+from fastapi import FastAPI, File, UploadFile
 import os
-import asyncio
+import subprocess
+import uvicorn
+from ai_agents import MasterAgent, UpdateAgent, SecurityAgent
+import threading
 import time
-import json
 import logging
-from datetime import datetime
-from PIL import Image
-import io
-import base64
-import concurrent.futures
-import uuid
+from typing import List
 
-# Import master controller
-from master_ai_controller import get_master_controller
-
-from orchestrator import BrainOrchestrator
-from agents import AGENT_DESCRIPTIONS, get_agent_details, get_available_agents, get_vision_compatible_agents
-from utils import (
-    encode_image_to_base64, truncate_text, generate_session_id, 
-    format_agent_response, get_error_message, save_interaction_log, 
-    analyze_agent_performance
-)
-from analytics import render_analytics_page
-from config import OPENROUTER_API_KEY, SITE_NAME, MAX_CONCURRENT_AGENTS, ALLOWED_EXTENSIONS
-
-# Set up logging
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("logs/app.log")
+        logging.FileHandler("logs/app.log"),
+        logging.StreamHandler()
     ]
 )
-logger = logging.getLogger("brain_app")
+logger = logging.getLogger("app")
 
-# Page configuration
-st.set_page_config(
-    page_title="AI Brain - Multi-Agent Orchestration",
-    page_icon="🧠",
-    layout="wide"
-)
+app = FastAPI()
 
-# Page navigation in sidebar
-app_pages = {
-    "Brain Interface": "brain_interface",
-    "Analytics Dashboard": "analytics"
-}
-selected_page = st.sidebar.radio("Navigation", list(app_pages.keys()))
-
-# Initialize controllers
-@st.cache_resource
-def get_orchestrator():
-    api_key = os.getenv("OPENROUTER_API_KEY")
-    if not api_key:
-        st.warning("⚠️ OpenRouter API key not found in environment variables. Some functionality may be limited.")
-    
-    return BrainOrchestrator(api_key=api_key)
-
-@st.cache_resource
-def get_master_ai_controller():
-    api_key = os.getenv("OPENROUTER_API_KEY")
-    if not api_key:
-        st.warning("⚠️ OpenRouter API key not found in environment variables. Some functionality may be limited.")
-    
-    return get_master_controller(api_key=api_key)
-
-# Initialize the orchestrator and master controller
-orchestrator = get_orchestrator()
 try:
-    master_controller = get_master_ai_controller()
-    master_controller_available = True
-    st.sidebar.success("✅ Master AI Controller is active")
+    master = MasterAgent()
+    update_agent = UpdateAgent(master)
+    security_agent = SecurityAgent(master)
+
+    # Run update checks and security checks in separate threads
+    update_thread = threading.Thread(target=update_agent.run_hourly_updates)
+    security_thread = threading.Thread(target=security_agent.start_monitoring)
+
+    update_thread.daemon = True
+    security_thread.daemon = True
+
+    update_thread.start()
+    security_thread.start()
+
+    logger.info("Update and security threads started.")
+
+except ValueError as e:
+    logger.error(f"Configuration error: {e}")
+    # Handle the error appropriately, e.g., exit the application
+    exit()
 except Exception as e:
-    logger.error(f"Error initializing Master AI Controller: {str(e)}")
-    master_controller_available = False
+    logger.error(f"An error occurred during initialization: {e}")
+    exit()
 
-# Define the content for each page
-def show_brain_interface():
-    # Sidebar for agent selection and configuration
-    st.sidebar.title("🧠 AI Brain Control")
-    
-    # Add a link to scripts documentation
-    with st.sidebar.expander("Advanced Brain Features", expanded=False):
-        st.markdown("""
-        **BrainOS Advanced Components:**
-        - **Deep Thinking Engine**: Multi-step reasoning for complex problems
-        - **Neural Bridge**: Autonomous agent communication framework
-        - **Swarm Intelligence**: Self-organizing agent collaborative system
-        - **Quantum Vision**: Advanced image analysis with quantum-inspired algorithms
-        
-        These components work autonomously together as a complete artificial brain.
-        """)
 
-    # Display information about each agent
-    st.sidebar.subheader("Available Agents")
-    selected_agents = {}
+@app.get("/")
+def read_root():
+    return {"message": "المشروع يعمل بسلاسة! التحديثات تتم تلقائيا..."}
 
-    # Show available agent list from config
-    available_agents = get_available_agents()
+@app.post("/analyze-image")
+async def analyze_image(file: UploadFile = File(...)):
+    logger.info(f"Analyzing image: {file.filename}")
+    # Simulate image analysis
+    await file.read()  # Read the file (required)
+    analysis_results = {"filename": file.filename, "analysis": "Image analysis complete (simulated)."}
+    return analysis_results
 
-    # Create agent categories based on capabilities
-    agent_categories = {}
+@app.post("/createWebsite")
+async def create_website():
+    return {"message": "Creating website (simulated)."}
 
-    # Create categories dynamically from agent capabilities
-    for agent_name in available_agents:
-        agent_details = get_agent_details(agent_name)
-        capabilities = agent_details.get("capabilities", [])
-        
-        # Determine the category based on main capabilities
-        if "image_analysis" in capabilities or "visual" in agent_details.get("description", "").lower():
-            category = "Perception"
-        elif "reasoning" in capabilities or "analysis" in capabilities:
-            category = "Analysis"
-        elif "generation" in capabilities or "creation" in capabilities or "design" in capabilities:
-            category = "Creation"
-        elif "security" in capabilities or "testing" in capabilities or "review" in capabilities:
-            category = "Validation"
-        elif "coordination" in capabilities or "integration" in capabilities or "orchestration" in capabilities:
-            category = "Coordination"
-        else:
-            category = "General"
-        
-        # Add the agent to the appropriate category
-        if category not in agent_categories:
-            agent_categories[category] = []
-        agent_categories[category].append(agent_name)
+@app.post("/smartUpdates")
+async def smart_updates():
+    return {"message": "Running smart updates (simulated)."}
 
-    # Additional filters
-    st.sidebar.subheader("Filter Options")
-    auto_select = st.sidebar.checkbox("Auto-select appropriate agents", value=True)
-    show_vision_only = st.sidebar.checkbox("Show vision-capable agents only", value=False)
+@app.post("/manageAgents")
+async def manage_agents():
+    return {"message": "Managing agents (simulated)."}
 
-    # Allow users to select which agents to include
-    for category, agents in agent_categories.items():
-        st.sidebar.markdown(f"**{category}**")
-        
-        # Filter by vision capability if requested
-        display_agents = agents
-        if show_vision_only:
-            vision_agents = get_vision_compatible_agents()
-            display_agents = [a for a in agents if a in vision_agents]
-        
-        for agent in display_agents:
-            agent_details = get_agent_details(agent)
-            selected_agents[agent] = st.sidebar.checkbox(
-                f"{agent} - {agent_details.get('description', '')}",
-                value=False  # We'll handle auto-selection in processing
-            )
+@app.post("/auto-update")
+def auto_update():
+    master.update_project()
+    return {"status": "تحديث نجح"}
 
-    # Main content area
-    st.title("🧠 Multi-Agent AI Orchestration System")
-    st.markdown("""
-    This system coordinates 20 specialized AI agents through OpenRouter.ai to process 
-    and analyze different types of inputs. Each agent has specific capabilities 
-    and roles in the cognitive process.
-    """)
-    
-    # Return selected agents to use in the processing logic
-    return selected_agents, auto_select, available_agents
 
-# Show content based on selected page
-if selected_page == "Brain Interface":
-    selected_agents, auto_select, available_agents = show_brain_interface()
-    
-    # Input options
-    input_type = st.radio("Select input type:", ["Text", "Image + Text"], horizontal=True)
-    
-    if input_type == "Text":
-        user_input = st.text_area("Enter your text:", height=150)
-        uploaded_image = None
-    else:  # Image + Text
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            uploaded_image = st.file_uploader("Upload an image:", type=["jpg", "jpeg", "png"])
-            if uploaded_image:
-                image = Image.open(uploaded_image)
-                st.image(image, caption="Uploaded Image", use_column_width=True)
-        with col2:
-            user_input = st.text_area("Enter your text:", height=150)
-            
-    # Process interaction with the Brain
-elif selected_page == "Analytics Dashboard":
-    # Show analytics dashboard using the function from analytics.py
-    render_analytics_page()
-
-# Process interaction with the Brain only in the Brain Interface page
-if selected_page == "Brain Interface":
-    # Process button
-    if st.button("Process with AI Brain"):
-        if not user_input and not uploaded_image:
-            st.error("Please provide either text input or an image to process.")
-        else:
-            # Prepare active agents list
-            active_agents = [agent for agent, is_selected in selected_agents.items() if is_selected]
-            
-            # Auto-select agents if enabled and none were manually selected
-            if auto_select and not active_agents:
-                # If we have an image, use image-capable agents
-                if uploaded_image:
-                    vision_agents = get_vision_compatible_agents()
-                    # Get a mix of vision and non-vision agents
-                    active_agents = vision_agents[:3]  # Top 3 vision agents
-                    
-                    # Add some general agents
-                    general_agents = [a for a in available_agents 
-                                    if "general" in get_agent_details(a).get("capabilities", [])]
-                    if general_agents:
-                        active_agents.extend(general_agents[:2])
-                else:
-                    # For text, analyze the content to select appropriate agents
-                    if user_input:
-                        # Get specialized agents based on input
-                        selected_task_agents = asyncio.run(
-                            orchestrator.agent_select_task(user_input)
-                        )
-                        active_agents = selected_task_agents
-                    else:
-                        # Select some default agents if no input provided
-                        active_agents = [a for a in available_agents 
-                                        if any(cap in get_agent_details(a).get("capabilities", [])
-                                            for cap in ["general", "analysis", "integration"])][:3]
-                
-                # Ensure we don't exceed limits
-                active_agents = active_agents[:MAX_CONCURRENT_AGENTS]
-                st.info(f"Auto-selected agents: {', '.join(active_agents)}")
-            
-            if not active_agents:
-                st.warning("Please select at least one agent to process your input.")
-            else:
-                with st.spinner("The AI Brain is processing your input..."):
-                    # Convert image to base64 if provided
-                    image_data = None
-                    if uploaded_image:
-                        image_bytes = uploaded_image.getvalue()
-                        image_b64 = base64.b64encode(image_bytes).decode('utf-8')
-                        image_data = f"data:image/{uploaded_image.type.split('/')[-1]};base64,{image_b64}"
-                    
-                    # Generate a session ID for this interaction
-                    session_id = generate_session_id()
-                    
-                    # Record the start time for performance tracking
-                    start_time = time.time()
-                    
-                    # Use Master Controller if available, otherwise use orchestrator
-                    try:
-                        # Create a progress bar to show processing steps
-                        progress_bar = st.progress(0)
-                        status_text = st.empty()
-                        
-                        # Phase 1: Agent selection
-                        status_text.text("Selecting and initializing agents...")
-                        progress_bar.progress(10)
-                        
-                        # Phase 2: Processing input - Use unified brain or standard processing
-                        if 'master_controller_available' in locals() and master_controller_available:
-                            # Single brain processing using all agents internally
-                            status_text.text("Processing with unified autonomous brain system...")
-                            master_result = asyncio.run(master_controller.process_user_request(
-                                text=user_input,
-                                image_data=image_data,
-                                mode="auto"  # Auto-select optimal processing mode
-                            ))
-                            
-                            # Convert master controller result to standard format
-                            if "error" in master_result:
-                                raise Exception(master_result["error"])
-                            
-                            # Extract content from different possible response formats
-                            integrated_response = None
-                            if "integrated_response" in master_result:
-                                integrated_response = master_result["integrated_response"]
-                            elif "final_output" in master_result:
-                                integrated_response = master_result["final_output"] if isinstance(master_result["final_output"], str) else json.dumps(master_result["final_output"], indent=2)
-                            elif "conclusion" in master_result:
-                                integrated_response = master_result["conclusion"]
-                            else:
-                                integrated_response = "Brain processing complete. See agent responses for details."
-                            
-                            # Create compatible results structure
-                            results = {
-                                "agent_responses": {"MasterBrain": "All specialized agents collaborated autonomously on this task."},
-                                "integrated_response": integrated_response,
-                                "processing_time": master_result.get("processing_time", 0),
-                                "mode": master_result.get("mode", "unified")
-                            }
-                        else:
-                            # Fallback to regular orchestration
-                            status_text.text(f"Processing input with {len(active_agents)} agents...")
-                            results = asyncio.run(orchestrator.process_request(
-                            text=user_input,
-                            image_url=image_data,
-                            agents=active_agents
-                        ))
-                        
-                        # Phase 3: Integrating responses
-                        progress_bar.progress(75)
-                        status_text.text("Integrating agent responses...")
-                        
-                        # Calculate processing time
-                        processing_time = time.time() - start_time
-                        
-                        # Log the interaction details
-                        save_interaction_log(
-                            session_id=session_id,
-                            input_text=user_input,
-                            agent_responses=results['agent_responses'],
-                            integrated_response=results['integrated_response'],
-                            image_provided=image_data is not None,
-                            processing_time=processing_time
-                        )
-                        progress_bar.progress(100)
-                        status_text.text(f"Processing complete! Time: {processing_time:.2f}s")
-                        
-                        # Display results
-                        st.success(f"Processing complete in {processing_time:.2f} seconds")
-                        
-                        # Information about the session
-                        st.info(f"Session ID: {session_id} | Agents: {len(active_agents)} | Time: {processing_time:.2f}s")
-                        
-                        # Show individual agent responses in expandable sections
-                        st.subheader("Agent Responses")
-                        
-                        for agent, response in results['agent_responses'].items():
-                            agent_details = get_agent_details(agent)
-                            with st.expander(f"{agent} ({agent_details.get('model_short', 'Unknown')})", expanded=False):
-                                st.markdown(response)
-                                
-                                # Show performance analysis for the agent
-                                performance = analyze_agent_performance(agent, response)
-                                st.caption(f"Response length: {performance['response_length']} chars | Paragraphs: {performance['response_paragraphs']}")
-                        
-                        # Show summarized response
-                        st.subheader("Integrated Response")
-                        st.markdown(results['integrated_response'])
-                        
-                    except Exception as e:
-                        logger.error(f"Error in request processing: {str(e)}")
-                        error_message = get_error_message(e)
-                        st.error(f"Error: {error_message}")
-                        
-                        # Check if it's an OpenRouter API key issue
-                        if "API key" in str(e):
-                            st.warning("Please make sure your OpenRouter API key is set in the environment variables (.env file).")
-                        
-                        # Show more detailed error information in an expander
-                        with st.expander("Technical Details", expanded=False):
-                            st.code(str(e), language="python")
-
-# Footer
-st.markdown("---")
-st.caption("AI Brain Orchestration System - Powered by OpenRouter.ai")
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
