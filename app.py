@@ -11,6 +11,9 @@ import base64
 import concurrent.futures
 import uuid
 
+# Import master controller
+from master_ai_controller import get_master_controller
+
 from orchestrator import BrainOrchestrator
 from agents import AGENT_DESCRIPTIONS, get_agent_details, get_available_agents, get_vision_compatible_agents
 from utils import (
@@ -46,7 +49,7 @@ app_pages = {
 }
 selected_page = st.sidebar.radio("Navigation", list(app_pages.keys()))
 
-# Initialize orchestrator
+# Initialize controllers
 @st.cache_resource
 def get_orchestrator():
     api_key = os.getenv("OPENROUTER_API_KEY")
@@ -55,8 +58,23 @@ def get_orchestrator():
     
     return BrainOrchestrator(api_key=api_key)
 
-# Initialize the orchestrator
+@st.cache_resource
+def get_master_ai_controller():
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        st.warning("⚠️ OpenRouter API key not found in environment variables. Some functionality may be limited.")
+    
+    return get_master_controller(api_key=api_key)
+
+# Initialize the orchestrator and master controller
 orchestrator = get_orchestrator()
+try:
+    master_controller = get_master_ai_controller()
+    master_controller_available = True
+    st.sidebar.success("✅ Master AI Controller is active")
+except Exception as e:
+    logger.error(f"Error initializing Master AI Controller: {str(e)}")
+    master_controller_available = False
 
 # Define the content for each page
 def show_brain_interface():
@@ -225,7 +243,7 @@ if selected_page == "Brain Interface":
                     # Record the start time for performance tracking
                     start_time = time.time()
                     
-                    # Process with the orchestrator
+                    # Use Master Controller if available, otherwise use orchestrator
                     try:
                         # Create a progress bar to show processing steps
                         progress_bar = st.progress(0)
@@ -235,11 +253,42 @@ if selected_page == "Brain Interface":
                         status_text.text("Selecting and initializing agents...")
                         progress_bar.progress(10)
                         
-                        # Phase 2: Processing input
-                        status_text.text(f"Processing input with {len(active_agents)} agents...")
-                        
-                        # Run the main orchestration process
-                        results = asyncio.run(orchestrator.process_request(
+                        # Phase 2: Processing input - Use unified brain or standard processing
+                        if 'master_controller_available' in locals() and master_controller_available:
+                            # Single brain processing using all agents internally
+                            status_text.text("Processing with unified autonomous brain system...")
+                            master_result = asyncio.run(master_controller.process_user_request(
+                                text=user_input,
+                                image_data=image_data,
+                                mode="auto"  # Auto-select optimal processing mode
+                            ))
+                            
+                            # Convert master controller result to standard format
+                            if "error" in master_result:
+                                raise Exception(master_result["error"])
+                            
+                            # Extract content from different possible response formats
+                            integrated_response = None
+                            if "integrated_response" in master_result:
+                                integrated_response = master_result["integrated_response"]
+                            elif "final_output" in master_result:
+                                integrated_response = master_result["final_output"] if isinstance(master_result["final_output"], str) else json.dumps(master_result["final_output"], indent=2)
+                            elif "conclusion" in master_result:
+                                integrated_response = master_result["conclusion"]
+                            else:
+                                integrated_response = "Brain processing complete. See agent responses for details."
+                            
+                            # Create compatible results structure
+                            results = {
+                                "agent_responses": {"MasterBrain": "All specialized agents collaborated autonomously on this task."},
+                                "integrated_response": integrated_response,
+                                "processing_time": master_result.get("processing_time", 0),
+                                "mode": master_result.get("mode", "unified")
+                            }
+                        else:
+                            # Fallback to regular orchestration
+                            status_text.text(f"Processing input with {len(active_agents)} agents...")
+                            results = asyncio.run(orchestrator.process_request(
                             text=user_input,
                             image_url=image_data,
                             agents=active_agents
