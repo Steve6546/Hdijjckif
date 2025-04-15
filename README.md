@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # BrainOS - Multi-Agent AI Orchestration System
 
 BrainOS is a comprehensive multi-agent AI orchestration system that coordinates 20 specialized AI models through OpenRouter.ai. It functions as an "artificial brain" where multiple agents collaborate autonomously to process tasks and solve complex problems.
@@ -79,3 +80,6 @@ BrainOS functions as a true "artificial brain" by:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+=======
+# Hdijjckif
+>>>>>>> ae282352286f8825c6191bf67ce7abc749ee2bef
