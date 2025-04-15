@@ -1,16 +1,13 @@
 
 [server]
-headless = true
-enableCORS = false
-enableXsrfProtection = false
-address = "0.0.0.0"
 port = 5000
-enableWebsocketCompression = false
+address = "0.0.0.0"
 maxUploadSize = 200
-maxMessageSize = 200
+enableWebsocketCompression = false
+enableXsrfProtection = false
+enableCORS = false
 
 [browser]
-gatherUsageStats = false
 serverAddress = "0.0.0.0"
 serverPort = 5000
 
@@ -19,7 +16,3 @@ primaryColor = "#4CAF50"
 backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F0F2F6"
 textColor = "#262730"
-
-[logger]
-level = "info"
-messageFormat = "%(asctime)s - %(message)s"

@@ -109,7 +109,17 @@ st.markdown("""
 def initialize_controller():
     """Initialize and return the controller."""
     try:
+        # Initialize event loop if needed
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
         controller = get_master_controller(api_key=OPENROUTER_API_KEY)
+        # Start the brain core
+        if controller.core_available:
+            controller.brain_core.start()
         return controller
     except Exception as e:
         st.error(f"Error initializing controller: {str(e)}")
