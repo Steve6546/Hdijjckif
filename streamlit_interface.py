@@ -43,7 +43,8 @@ if not os.environ.get("STREAMLIT_SERVER_PORT"):
     os.environ["STREAMLIT_SERVER_PORT"] = "5000"
 os.environ["STREAMLIT_SERVER_ADDRESS"] = "0.0.0.0"
 os.environ["STREAMLIT_SERVER_HEADLESS"] = "true"
-os.environ["STREAMLIT_SERVER_ENABLE_CORS"] = "false"
+os.environ["STREAMLIT_SERVER_ENABLE_CORS"] = "true"
+os.environ["STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION"] = "false"
 
 # Use custom CSS
 st.markdown("""
