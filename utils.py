@@ -4,10 +4,19 @@ Utility functions for the AI Brain orchestration system.
 
 import base64
 import io
-from typing import Optional
-from PIL import Image
+import os
+import uuid
+import json
 import hashlib
 import time
+import logging
+from datetime import datetime
+from typing import Dict, Any, Optional, List, Tuple, Union
+from PIL import Image
+
+# Set up logging
+logger = logging.getLogger("brain_utils")
+logger.setLevel(logging.INFO)
 
 def encode_image_to_base64(image_path: str) -> str:
     """
@@ -88,11 +97,89 @@ def get_error_message(error: Exception) -> str:
     Returns:
         str: User-friendly error message
     """
-    if "API key" in str(error).lower():
+    error_str = str(error).lower()
+    if "api key" in error_str:
         return "Invalid or missing API key. Please check your OpenRouter API key."
-    elif "rate limit" in str(error).lower():
+    elif "rate limit" in error_str:
         return "Rate limit exceeded. Please try again later."
-    elif "timeout" in str(error).lower():
+    elif "timeout" in error_str:
         return "Request timed out. The server might be busy, please try again."
+    elif "unauthorized" in error_str or "authentication" in error_str:
+        return "Authentication failed. Please check your API credentials."
+    elif "not found" in error_str or "404" in error_str:
+        return "The requested resource was not found. Please check your inputs."
+    elif "bad request" in error_str or "400" in error_str:
+        return "Invalid request. Please check your input parameters."
     else:
+        logger.error(f"Unhandled error: {error_str}")
         return f"An error occurred: {str(error)}"
+        
+def save_interaction_log(
+    session_id: str,
+    input_text: str,
+    agent_responses: Dict[str, str],
+    integrated_response: str,
+    image_provided: bool = False
+) -> None:
+    """
+    Save interaction details to a log file for future reference and analysis.
+    
+    Args:
+        session_id (str): Unique session identifier
+        input_text (str): User's input text
+        agent_responses (Dict[str, str]): Responses from individual agents
+        integrated_response (str): The final integrated response
+        image_provided (bool): Whether an image was part of the input
+    """
+    timestamp = datetime.now().isoformat()
+    log_entry = {
+        "timestamp": timestamp,
+        "session_id": session_id,
+        "input": truncate_text(input_text, 500),
+        "image_provided": image_provided,
+        "agent_count": len(agent_responses),
+        "agents_used": list(agent_responses.keys()),
+        "response_length": len(integrated_response)
+    }
+    
+    try:
+        log_file = os.path.join("logs", "interactions.jsonl")
+        with open(log_file, "a") as f:
+            f.write(json.dumps(log_entry) + "\n")
+            
+        # Save detailed agent responses in a separate file
+        detailed_log_file = os.path.join("logs", f"session_{session_id}.json")
+        detailed_log = {
+            "timestamp": timestamp,
+            "session_id": session_id,
+            "input_text": input_text,
+            "image_provided": image_provided,
+            "agent_responses": agent_responses,
+            "integrated_response": integrated_response
+        }
+        
+        with open(detailed_log_file, "w") as f:
+            json.dump(detailed_log, f, indent=2)
+            
+    except Exception as e:
+        logger.error(f"Failed to save interaction log: {e}")
+        
+def analyze_agent_performance(agent_name: str, response: str) -> Dict[str, Any]:
+    """
+    Analyze an agent's performance based on response characteristics.
+    
+    Args:
+        agent_name (str): Name of the agent
+        response (str): The agent's response
+        
+    Returns:
+        Dict[str, Any]: Performance metrics
+    """
+    return {
+        "agent": agent_name,
+        "response_length": len(response),
+        "response_paragraphs": response.count("\n\n") + 1,
+        "has_code_blocks": "```" in response,
+        "has_lists": "- " in response or "* " in response,
+        "timestamp": datetime.now().isoformat()
+    }
