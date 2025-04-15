@@ -1,12 +1,11 @@
 
 [server]
 headless = true
-enableCORS = true
+enableCORS = false
 enableXsrfProtection = false
 address = "0.0.0.0"
 port = 5000
 enableWebsocketCompression = false
-runOnSave = true
 maxUploadSize = 200
 maxMessageSize = 200
 
@@ -23,3 +22,4 @@ textColor = "#262730"
 
 [logger]
 level = "info"
+messageFormat = "%(asctime)s - %(message)s"
