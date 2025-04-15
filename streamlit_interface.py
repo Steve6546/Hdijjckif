@@ -15,6 +15,7 @@ from datetime import datetime
 import streamlit as st
 from PIL import Image
 import numpy as np
+import subprocess
 
 # Add the parent directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -37,6 +38,19 @@ st.set_page_config(
         'About': None
     }
 )
+
+# Add update button to sidebar
+with st.sidebar:
+    if st.button("تحديث النظام", help="Update system from repository"):
+        try:
+            result = subprocess.run(["git", "pull"], capture_output=True, text=True)
+            if result.returncode == 0:
+                st.success("✅ تم تحديث النظام بنجاح!")
+                st.info("Please restart the application for changes to take effect")
+            else:
+                st.error(f"❌ فشل التحديث: {result.stderr}")
+        except Exception as e:
+            st.error(f"❌ خطأ في التحديث: {str(e)}")
 
 # Configure Streamlit to handle server issues
 if not os.environ.get("STREAMLIT_SERVER_PORT"):
