@@ -1,15 +1,14 @@
 
 [server]
-port = 5000
-address = "0.0.0.0"
-maxUploadSize = 200
-enableWebsocketCompression = false
-enableXsrfProtection = false
 enableCORS = false
+enableXsrfProtection = false
+enableWebsocketCompression = false
+maxUploadSize = 200
+maxMessageSize = 200
+headless = true
 
 [browser]
-serverAddress = "0.0.0.0"
-serverPort = 5000
+gatherUsageStats = false
 
 [theme]
 primaryColor = "#4CAF50"

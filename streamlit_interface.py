@@ -156,8 +156,9 @@ with st.sidebar:
     system_state = system_status.get("system_state", "unknown")
     st.markdown(f"<div><span class='status-indicator {status_color.get(system_state, 'status-waiting')}'></span> System State: {system_state.capitalize()}</div>", unsafe_allow_html=True)
     
-    st.markdown(f"Session ID: `{st.session_state.session_id}`")
-    st.markdown(f"Last Activity: {system_status.get('last_activity', 'N/A')}")
+    # Hide sensitive session information
+    if st.sidebar.checkbox("عرض معلومات متقدمة", value=False):
+        st.markdown(f"آخر نشاط: {system_status.get('last_activity', 'N/A')}")
     
     # Advanced Settings
     st.subheader("🛠️ Advanced Settings")
