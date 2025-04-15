@@ -94,11 +94,18 @@ st.markdown("""
 @st.cache_resource
 def initialize_controller():
     """Initialize and return the controller."""
-    return get_master_controller(api_key=OPENROUTER_API_KEY)
+    try:
+        controller = get_master_controller(api_key=OPENROUTER_API_KEY)
+        return controller
+    except Exception as e:
+        st.error(f"Error initializing controller: {str(e)}")
+        return None
 
 # Initialize session state
 if "controller" not in st.session_state:
-    st.session_state.controller = initialize_controller()
+    controller = initialize_controller()
+    if controller:
+        st.session_state.controller = controller
     st.session_state.conversation_history = []
     st.session_state.messages = []
     st.session_state.processing_modes = ["auto", "standard", "deep", "swarm", "neuralsym"]

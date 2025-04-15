@@ -173,10 +173,6 @@ class BrainOSCore:
         self.system_state = "running"
         logger.info("Starting BrainOS Core")
         
-        # Start task scheduler if available
-        if "task_scheduler" in self.components and self.component_status["task_scheduler"] == "ready":
-            asyncio.create_task(self.components["task_scheduler"].process_tasks())
-        
         # Start autonomous operation thread
         if self.autonomous_mode:
             self.autonomous_thread = threading.Thread(target=self._autonomous_operation)
