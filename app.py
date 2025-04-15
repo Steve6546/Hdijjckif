@@ -62,6 +62,18 @@ orchestrator = get_orchestrator()
 def show_brain_interface():
     # Sidebar for agent selection and configuration
     st.sidebar.title("🧠 AI Brain Control")
+    
+    # Add a link to scripts documentation
+    with st.sidebar.expander("Advanced Brain Features", expanded=False):
+        st.markdown("""
+        **BrainOS Advanced Components:**
+        - **Deep Thinking Engine**: Multi-step reasoning for complex problems
+        - **Neural Bridge**: Autonomous agent communication framework
+        - **Swarm Intelligence**: Self-organizing agent collaborative system
+        - **Quantum Vision**: Advanced image analysis with quantum-inspired algorithms
+        
+        These components work autonomously together as a complete artificial brain.
+        """)
 
     # Display information about each agent
     st.sidebar.subheader("Available Agents")
