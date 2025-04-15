@@ -45,3 +45,4 @@ args = "streamlit run streamlit_interface.py --server.address 0.0.0.0 --server.p
 
 [[ports]]
 localPort = 5000
+externalPort = 5000
