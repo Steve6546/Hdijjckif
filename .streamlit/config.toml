@@ -21,10 +21,5 @@ backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F0F2F6"
 textColor = "#262730"
 
-[client]
-showErrorDetails = true
-toolbarMode = "minimal"
-caching = false
-
-[runner]
-fastReruns = true
+[logger]
+level = "info"
