@@ -255,10 +255,18 @@ async def edit_image(
                 content_type = "image/gif"
             
             app_logger.info(f"Returning processed image for user '{current_user}'")
+            
+            # Ensure message is ASCII-compatible for HTTP headers
+            message = result.get("message", "Image processed successfully")
+            # Replace non-ASCII characters with their closest ASCII equivalent or remove them
+            ascii_message = message.encode('ascii', 'ignore').decode('ascii')
+            if not ascii_message:
+                ascii_message = "Image processed successfully"
+                
             return StreamingResponse(
                 io.BytesIO(processed_image),
                 media_type=content_type,
-                headers={"X-Message": result.get("message", "Image processed successfully")}
+                headers={"X-Message": ascii_message}
             )
         else:
             # Return just the message
