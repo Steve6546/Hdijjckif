@@ -98,7 +98,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({ 
                     query,
-                    model: currentModel
+                    model: currentModel,
+                    temperature: 0.7,
+                    top_p: 0.9
                 })
             });
             
@@ -115,7 +117,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     body: JSON.stringify({ 
                         query,
-                        model: currentModel
+                        model: currentModel,
+                        temperature: 0.7,
+                        top_p: 0.9
                     })
                 });
                 

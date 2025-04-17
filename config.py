@@ -6,9 +6,19 @@ import os
 from typing import Dict, List, Any
 
 # API Settings
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-SITE_URL = "https://brainos.ai"
-SITE_NAME = "BrainOS v5.0"
+# Try to read from .env file directly if environment variable is not set
+try:
+    with open(os.path.join(os.path.dirname(__file__), '.env'), 'r') as f:
+        for line in f:
+            if line.startswith('OPENROUTER_API_KEY='):
+                os.environ['OPENROUTER_API_KEY'] = line.split('=', 1)[1].strip()
+                break
+except Exception as e:
+    print(f"Could not read .env file: {e}")
+
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
+SITE_URL = os.getenv("SITE_URL", "https://brainos.ai")
+SITE_NAME = os.getenv("SITE_NAME", "BrainOS AI System")
 
 # System Settings
 ALLOWED_EXTENSIONS = ['.jpg', '.png', '.pdf', '.txt', '.zip']

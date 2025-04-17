@@ -78,6 +78,9 @@ except Exception as e:
 # --- Request Models ---
 class QueryInput(BaseModel):
     query: str
+    model: Optional[str] = None
+    temperature: Optional[float] = 0.7
+    top_p: Optional[float] = 0.9
 
 class Token(BaseModel):
     access_token: str
@@ -169,7 +172,16 @@ async def handle_query(data: QueryInput, current_user: str = Depends(get_current
         app_logger.info(f"Cache miss for user '{current_user}', query: '{query}'. Processing...")
         # If not in cache, process the query via MasterAgent
         # MasterAgent's process_query now handles logging internally
-        response = await master.process_query(query, user_id=current_user)
+        # Pass model and parameters if provided
+        model = data.model
+        temperature = data.temperature
+        top_p = data.top_p
+        
+        # Log the model being used
+        if model:
+            app_logger.info(f"Using model: {model} with temperature: {temperature}, top_p: {top_p}")
+            
+        response = await master.process_query(query, user_id=current_user, model=model, temperature=temperature, top_p=top_p)
 
         # Store the result in cache if connection is available
         if cache.redis_connection:

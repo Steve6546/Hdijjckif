@@ -109,13 +109,16 @@ class MasterAgent:
         # Add more validation rules if needed
         return None
 
-    async def process_query(self, query: str, user_id: str) -> str:
+    async def process_query(self, query: str, user_id: str, model: str = None, temperature: float = 0.7, top_p: float = 0.9) -> str:
         """
         Processes a user query, routes to the appropriate agent, and logs the activity.
 
         Args:
             query (str): The user's query.
             user_id (str): The ID of the user making the query (from auth).
+            model (str, optional): The model to use for generation.
+            temperature (float, optional): The temperature parameter for generation.
+            top_p (float, optional): The top_p parameter for generation.
 
         Returns:
             str: The response from the agent or a default message.
@@ -138,7 +141,16 @@ class MasterAgent:
                 prompt = query.split(":", 1)[-1].strip()
                 if prompt and "ai" in self.agents:
                     logger.debug(f"Routing to AdvancedAI agent with prompt: '{prompt}'")
-                    response = self.agents["ai"].generate(prompt)
+                    # Pass model and parameters if provided
+                    if model:
+                        # Temporarily switch model if specified
+                        original_model = self.agents["ai"].model_name
+                        self.agents["ai"].model_name = model
+                        response = self.agents["ai"].generate(prompt, temperature=temperature, top_p=top_p)
+                        # Restore original model
+                        self.agents["ai"].model_name = original_model
+                    else:
+                        response = self.agents["ai"].generate(prompt, temperature=temperature, top_p=top_p)
                 else:
                     response = "خطأ: لم يتم توفير موجه نص أو وكيل الذكاء الاصطناعي غير متاح." # "Error: No text prompt provided or AI agent unavailable."
             
@@ -299,7 +311,16 @@ class MasterAgent:
             elif len(query.split()) <= 20:  # For short queries, use AI directly
                 logger.info(f"Using AI agent for general query: '{query}'")
                 if "ai" in self.agents:
-                    response = self.agents["ai"].generate(query)
+                    # Pass model and parameters if provided
+                    if model:
+                        # Temporarily switch model if specified
+                        original_model = self.agents["ai"].model_name
+                        self.agents["ai"].model_name = model
+                        response = self.agents["ai"].generate(query, temperature=temperature, top_p=top_p)
+                        # Restore original model
+                        self.agents["ai"].model_name = original_model
+                    else:
+                        response = self.agents["ai"].generate(query, temperature=temperature, top_p=top_p)
                 else:
                     # If no specific route matches, use a generic response
                     logger.info(f"No specific route matched for query: '{query}'. Providing generic response.")
