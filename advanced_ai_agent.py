@@ -255,9 +255,14 @@ class AdvancedAI:
         
         try:
             # Initialize OpenAI client with OpenRouter base URL
+            # Make sure we have a valid API key
+            if not self.api_key or len(self.api_key) < 20:
+                logger.error(f"Invalid API key: {self.api_key}")
+                return f"خطأ: مفتاح API غير صالح" if is_arabic else f"Error: Invalid API key"
+                
             client = OpenAI(
                 base_url="https://openrouter.ai/api/v1",
-                api_key=self.api_key or "sk-or-v1-free",  # Use a placeholder if no key provided
+                api_key=self.api_key,
             )
             
             # Add system message based on language
