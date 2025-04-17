@@ -2,9 +2,14 @@
 import os
 import logging
 import re
+import json
+import requests
+import aiohttp
+import asyncio
 from typing import Dict, Any, List, Optional, Union
 
 from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer, set_seed
+from config import OPENROUTER_API_KEY
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -41,6 +46,48 @@ AVAILABLE_MODELS = {
         "language": "ar",
         "size": "medium",
         "task": "text-generation"
+    },
+    "openai/gpt-3.5-turbo": {
+        "description": "OpenAI GPT-3.5 Turbo",
+        "language": "multi",
+        "size": "large",
+        "task": "chat",
+        "api": True
+    },
+    "openai/gpt-4": {
+        "description": "OpenAI GPT-4",
+        "language": "multi",
+        "size": "xlarge",
+        "task": "chat",
+        "api": True
+    },
+    "anthropic/claude-3-opus": {
+        "description": "Anthropic Claude 3 Opus",
+        "language": "multi",
+        "size": "xlarge",
+        "task": "chat",
+        "api": True
+    },
+    "anthropic/claude-3-sonnet": {
+        "description": "Anthropic Claude 3 Sonnet",
+        "language": "multi",
+        "size": "large",
+        "task": "chat",
+        "api": True
+    },
+    "meta-llama/llama-3-70b-instruct": {
+        "description": "Meta Llama 3 70B Instruct",
+        "language": "multi",
+        "size": "xlarge",
+        "task": "chat",
+        "api": True
+    },
+    "mistralai/mistral-large": {
+        "description": "Mistral Large",
+        "language": "multi",
+        "size": "large",
+        "task": "chat",
+        "api": True
     }
 }
 
@@ -67,11 +114,22 @@ class AdvancedAI:
             "size": "unknown"
         })
         
-        # For demo purposes, we'll skip loading the actual model to save time
-        logger.info(f"Demo mode: Skipping model initialization for {self.model_name}")
+        # Get API key for OpenRouter
+        self.api_key = os.getenv("OPENROUTER_API_KEY", "")
         
-        # Instead of loading the model, we'll just set up a placeholder
-        self.generator = True  # Just a placeholder to indicate it's "initialized"
+        # Check if we're using an API-based model
+        self.use_api = self.model_info.get("api", False)
+        
+        if self.use_api and not self.api_key:
+            logger.warning("API-based model selected but no API key provided. Set OPENROUTER_API_KEY environment variable.")
+            
+        # For local models, we'll skip loading the actual model to save time in demo mode
+        if not self.use_api:
+            logger.info(f"Demo mode: Skipping model initialization for local model {self.model_name}")
+            self.generator = True  # Just a placeholder to indicate it's "initialized"
+        else:
+            logger.info(f"Using API-based model: {self.model_name}")
+            self.generator = True  # API models don't need local initialization
 
     def generate(self, prompt: str, max_length: int = 150, num_return_sequences: int = 1,
                  temperature: float = 1.0, top_p: float = 0.9, seed: Optional[int] = None) -> str:
@@ -98,7 +156,11 @@ class AdvancedAI:
         logger.info(f"Generating text for prompt (first 50 chars): '{prompt[:50]}...' (Arabic: {is_arabic})")
         
         try:
-            # For demo purposes, we'll return a predefined response
+            # If using API-based model (OpenRouter)
+            if self.use_api and self.api_key:
+                return self._generate_with_api(prompt, max_length, temperature, top_p)
+            
+            # For local models or demo mode
             if is_arabic:
                 # Arabic response
                 generated_text = f"{prompt}\n\nهذا نص تم إنشاؤه بواسطة نموذج {self.model_name} (وضع العرض التوضيحي). يمكن استخدام هذا النموذج لتوليد نصوص متنوعة بناءً على المدخلات المقدمة. تم ضبط المعلمات على: درجة الحرارة = {temperature}، top_p = {top_p}، الحد الأقصى للطول = {max_length}."
@@ -112,6 +174,61 @@ class AdvancedAI:
         except Exception as e:
             logger.error(f"Error during text generation: {e}", exc_info=True)
             return f"خطأ أثناء توليد النص: {str(e)}" # "Error during text generation: {str(e)}"
+            
+    def _generate_with_api(self, prompt: str, max_length: int = 150, temperature: float = 1.0, top_p: float = 0.9) -> str:
+        """
+        Generate text using OpenRouter API.
+        
+        Args:
+            prompt: The text prompt to generate from
+            max_length: Maximum length of the generated text
+            temperature: Controls randomness
+            top_p: Controls diversity via nucleus sampling
+            
+        Returns:
+            str: The generated text
+        """
+        logger.info(f"Generating text with OpenRouter API using model: {self.model_name}")
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        # Format the messages for chat models
+        messages = [{"role": "user", "content": prompt}]
+        
+        data = {
+            "model": self.model_name,
+            "messages": messages,
+            "temperature": temperature,
+            "top_p": top_p,
+            "max_tokens": max_length
+        }
+        
+        try:
+            response = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers=headers,
+                data=json.dumps(data)
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "choices" in result and len(result["choices"]) > 0:
+                    generated_text = result["choices"][0]["message"]["content"]
+                    logger.info(f"Successfully generated text with OpenRouter API, length: {len(generated_text)}")
+                    return generated_text
+                else:
+                    logger.error(f"Unexpected response format from OpenRouter API: {result}")
+                    return f"Error: Unexpected response format from API"
+            else:
+                logger.error(f"OpenRouter API error: {response.status_code} - {response.text}")
+                return f"Error: API returned status code {response.status_code}"
+                
+        except Exception as e:
+            logger.error(f"Error calling OpenRouter API: {e}", exc_info=True)
+            return f"Error calling AI service: {str(e)}"
 
     def switch_model(self, model_name: str) -> str:
         """

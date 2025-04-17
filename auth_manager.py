@@ -13,11 +13,13 @@ logger = logging.getLogger(__name__)
 
 # --- Configuration ---
 # Load from environment variables or use defaults (INSECURE defaults for example only)
-SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_CHANGE_ME")
+SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_for_development_only_please_change_in_production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440))  # 24 hours
 
-if SECRET_KEY == "a_very_secret_key_CHANGE_ME":
+# For demo purposes, ensure we use a consistent key for the demo token in script.js
+if SECRET_KEY == "a_very_secret_key_for_development_only_please_change_in_production":
+    SECRET_KEY = "your_secret_key_here"
     logger.warning("Using default SECRET_KEY. This is INSECURE. Set the SECRET_KEY environment variable.")
 
 # --- Password Hashing ---
