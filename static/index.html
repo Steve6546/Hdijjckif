@@ -8,29 +8,90 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container mt-5">
+    <div class="container-fluid mt-3">
         <div class="row">
-            <div class="col-12 text-center mb-4">
+            <div class="col-12 text-center mb-3">
                 <h1 class="main-title">نظام الوكلاء الذكي المتكامل 3.0</h1>
                 <p class="lead">منصة متكاملة للذكاء الاصطناعي مع دعم للغة العربية</p>
-                <a href="/openrouter" class="btn btn-outline-primary mt-2">شرح استخدام OpenRouter</a>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="/openrouter" class="btn btn-outline-primary">شرح استخدام OpenRouter</a>
+                    <a href="#" class="btn btn-outline-success" id="modelSelector">تغيير النموذج</a>
+                </div>
             </div>
         </div>
 
-        <div class="row mb-4">
-            <div class="col-md-6 offset-md-3">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">استعلام الذكاء الاصطناعي</h5>
+        <div class="row">
+            <!-- Left Sidebar - Analysis Agents -->
+            <div class="col-md-3 mb-3">
+                <div class="card h-100 border-info">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">وكلاء التحليل</h5>
                     </div>
                     <div class="card-body">
-                        <form id="queryForm">
-                            <div class="mb-3">
-                                <label for="query" class="form-label">اكتب استعلامك هنا:</label>
-                                <textarea class="form-control" id="query" rows="3" placeholder="مثال: أنشئ نصًا: قصة قصيرة عن الصداقة"></textarea>
+                        <div class="agent-list">
+                            <div class="agent-item active">
+                                <i class="bi bi-search"></i> محلل النصوص
                             </div>
-                            <button type="submit" class="btn btn-primary">إرسال</button>
+                            <div class="agent-item">
+                                <i class="bi bi-translate"></i> مترجم
+                            </div>
+                            <div class="agent-item">
+                                <i class="bi bi-image"></i> محلل الصور
+                            </div>
+                            <div class="agent-item">
+                                <i class="bi bi-check-circle"></i> مدقق الحقائق
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content - AI Interaction -->
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">استعلام الذكاء الاصطناعي</h5>
+                        <span class="badge bg-light text-dark" id="currentModel">google/gemini-2.5-pro</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="chatContainer" class="chat-container mb-3">
+                            <div class="system-message">
+                                مرحبًا بك في نظام الوكلاء الذكي المتكامل 3.0. كيف يمكنني مساعدتك اليوم؟
+                            </div>
+                        </div>
+                        <form id="queryForm">
+                            <div class="input-group">
+                                <textarea class="form-control" id="query" rows="2" placeholder="اكتب استعلامك هنا..."></textarea>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-send"></i> إرسال
+                                </button>
+                            </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Sidebar - Execution Agents -->
+            <div class="col-md-3 mb-3">
+                <div class="card h-100 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">وكلاء التنفيذ</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="agent-list">
+                            <div class="agent-item">
+                                <i class="bi bi-code-square"></i> مبرمج
+                            </div>
+                            <div class="agent-item">
+                                <i class="bi bi-file-earmark-text"></i> منشئ المستندات
+                            </div>
+                            <div class="agent-item">
+                                <i class="bi bi-brush"></i> معالج الصور
+                            </div>
+                            <div class="agent-item">
+                                <i class="bi bi-database"></i> مدير البيانات
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
