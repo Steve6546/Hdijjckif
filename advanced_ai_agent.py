@@ -115,7 +115,7 @@ class AdvancedAI:
         })
         
         # Get API key for OpenRouter
-        self.api_key = os.getenv("OPENROUTER_API_KEY", "")
+        self.api_key = OPENROUTER_API_KEY or os.getenv("OPENROUTER_API_KEY", "")
         
         # Check if we're using an API-based model
         self.use_api = self.model_info.get("api", False)
@@ -190,16 +190,37 @@ class AdvancedAI:
         """
         logger.info(f"Generating text with OpenRouter API using model: {self.model_name}")
         
+        # Detect language
+        is_arabic = self._is_arabic_text(prompt)
+        
+        # Add system message based on language
+        system_message = "أنت مساعد ذكي ومفيد. أجب بدقة وبشكل مفصل على أسئلة المستخدم." if is_arabic else "You are a helpful and intelligent assistant. Answer user questions accurately and in detail."
+        
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://brainos.ai",  # Replace with your site
+            "X-Title": "BrainOS AI System"  # Replace with your app name
         }
         
         # Format the messages for chat models
-        messages = [{"role": "user", "content": prompt}]
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": prompt}
+        ]
+        
+        # If model not specified in available models, use a default model based on language
+        if self.model_name not in AVAILABLE_MODELS:
+            if is_arabic:
+                model = "qwen/qwen2.5-vl-72b-instruct:free"  # Better for Arabic
+            else:
+                model = "meta-llama/llama-3.3-70b-instruct:free"  # Default model
+            logger.info(f"Model {self.model_name} not found in available models, using {model} instead")
+        else:
+            model = self.model_name
         
         data = {
-            "model": self.model_name,
+            "model": model,
             "messages": messages,
             "temperature": temperature,
             "top_p": top_p,
@@ -210,7 +231,7 @@ class AdvancedAI:
             response = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers=headers,
-                data=json.dumps(data)
+                json=data  # Use json parameter instead of data with json.dumps
             )
             
             if response.status_code == 200:
@@ -221,10 +242,10 @@ class AdvancedAI:
                     return generated_text
                 else:
                     logger.error(f"Unexpected response format from OpenRouter API: {result}")
-                    return f"Error: Unexpected response format from API"
+                    return f"خطأ: تنسيق استجابة غير متوقع من API" if is_arabic else f"Error: Unexpected response format from API"
             else:
                 logger.error(f"OpenRouter API error: {response.status_code} - {response.text}")
-                return f"Error: API returned status code {response.status_code}"
+                return f"خطأ: API أعاد رمز الحالة {response.status_code}" if is_arabic else f"Error: API returned status code {response.status_code}"
                 
         except Exception as e:
             logger.error(f"Error calling OpenRouter API: {e}", exc_info=True)
