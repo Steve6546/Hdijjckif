@@ -11,6 +11,9 @@ from typing import Dict, Any, List, Optional, Union
 from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer, set_seed
 from openai import OpenAI
 
+# Get OpenRouter API key from environment
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -141,7 +144,7 @@ class AdvancedAI:
         })
         
         # Get API key for OpenRouter
-        self.api_key = OPENROUTER_API_KEY or os.getenv("OPENROUTER_API_KEY", "")
+        self.api_key = OPENROUTER_API_KEY
         
         # Check if we're using an API-based model
         self.use_api = self.model_info.get("api", False)
