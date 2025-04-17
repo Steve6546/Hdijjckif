@@ -25,9 +25,25 @@ class OpenRouterClient:
         Args:
             api_key (str, optional): OpenRouter API key. If None, will try to get from environment.
         """
-        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
+        # Try to read from .env file directly if environment variable is not set
+        try:
+            if not api_key and not os.getenv("OPENROUTER_API_KEY"):
+                with open(os.path.join(os.path.dirname(__file__), '.env'), 'r') as f:
+                    for line in f:
+                        if line.startswith('OPENROUTER_API_KEY='):
+                            os.environ['OPENROUTER_API_KEY'] = line.split('=', 1)[1].strip()
+                            break
+        except Exception as e:
+            logger.warning(f"Could not read .env file: {e}")
+            
+        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY", "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")
+        
         if not self.api_key:
             logger.warning("No OpenRouter API key provided. Set OPENROUTER_API_KEY environment variable.")
+        else:
+            # Log a masked version of the key for debugging
+            masked_key = self.api_key[:10] + "..." + self.api_key[-5:] if len(self.api_key) > 15 else "***"
+            logger.info(f"OpenRouter API Key: {masked_key}")
         
         self.site_url = os.getenv("SITE_URL", "https://brainos.ai")
         self.site_name = os.getenv("SITE_NAME", "BrainOS AI System")
