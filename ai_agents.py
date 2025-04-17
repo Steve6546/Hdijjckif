@@ -286,6 +286,25 @@ class MasterAgent:
             elif "مساعدة" in query or "help" in query_lower:
                 response = self._generate_help_text()
 
+            # --- Greetings and Simple Queries ---
+            elif any(greeting in query_lower or greeting in query for greeting in ["hello", "hi", "hey", "مرحبا", "هلا", "السلام عليكم"]):
+                # Handle greetings
+                is_arabic = any(ar_char in query for ar_char in "مرحباهلاأهلاالسلام")
+                if is_arabic:
+                    response = f"مرحباً {user_id}! كيف يمكنني مساعدتك اليوم؟ يمكنك كتابة 'مساعدة' للحصول على قائمة بالأوامر المدعومة."
+                else:
+                    response = f"Hello {user_id}! How can I help you today? You can type 'help' to see a list of supported commands."
+            
+            # --- Use AI for general queries ---
+            elif len(query.split()) <= 20:  # For short queries, use AI directly
+                logger.info(f"Using AI agent for general query: '{query}'")
+                if "ai" in self.agents:
+                    response = self.agents["ai"].generate(query)
+                else:
+                    # If no specific route matches, use a generic response
+                    logger.info(f"No specific route matched for query: '{query}'. Providing generic response.")
+                    response = f"تم استلام طلبك '{query}' بواسطة {user_id}. لا يوجد إجراء محدد تم تكوينه لهذا الطلب. اكتب 'مساعدة' للحصول على قائمة بالأوامر المدعومة."
+            
             else:
                 # If no specific route matches, use a generic response
                 logger.info(f"No specific route matched for query: '{query}'. Providing generic response.")

@@ -258,15 +258,14 @@ async def edit_image(
             
             # Ensure message is ASCII-compatible for HTTP headers
             message = result.get("message", "Image processed successfully")
-            # Replace non-ASCII characters with their closest ASCII equivalent or remove them
-            ascii_message = message.encode('ascii', 'ignore').decode('ascii')
-            if not ascii_message:
-                ascii_message = "Image processed successfully"
+            
+            # Use a simple English message for the header to avoid encoding issues
+            header_message = "Image processed successfully"
                 
             return StreamingResponse(
                 io.BytesIO(processed_image),
                 media_type=content_type,
-                headers={"X-Message": ascii_message}
+                headers={"X-Message": header_message}
             )
         else:
             # Return just the message
