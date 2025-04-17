@@ -3,23 +3,21 @@ import os
 import subprocess
 import time
 import logging
-# Removed Github and OpenRouter imports as they are no longer used by MasterAgent
-# from github import Github
-# from openrouter import OpenRouterClient
-from abc import ABC, abstractmethod
 import io
 import json
-import zipfile # Keep for zip placeholder if needed elsewhere, or remove if only used in MasterAgent
-import os # Keep for path operations if needed
-from PIL import Image, ImageOps # Keep for ImageFilterAgent if it remains
-# Import the new agents specified in v3.0 spec
+import zipfile
+from typing import Dict, Any, List, Optional, Union
+from PIL import Image, ImageOps
+
+# Import the specialized agents
 from advanced_ai_agent import AdvancedAI
 from project_agent import ProjectAgent
+from agents.image_agent import ImageAgent
 # Import the logger
-from logging_system import Logger as ActivityLogger # Use alias from app.py
-from ai_dev_studio.engine import AIEngine # Import the AIEngine
+from logging_system import Logger as ActivityLogger
+from ai_dev_studio.engine import AIEngine
 
-# Configure logging (keeping existing setup)
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -30,15 +28,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ai_agents")
 
-# Removed AgentBase, NLPAgent, ImageFilterAgent, DesignAgent, NewCodeAgent, NewImageAgent
-# as they are replaced by the new structure or not used in v3.0 MasterAgent.
-# Keeping the logger config at the top.
-
-# --- Placeholder Function (Keep if needed, or remove if logic moves elsewhere) ---
-def zip_files(file_list: list, archive_name: str):
-    """Placeholder function to zip files."""
-    logger.info(f"Placeholder: Zipping {file_list} into {archive_name}")
-    # Example basic implementation (replace with robust logic if needed)
+# --- Utility Functions ---
+def zip_files(file_list: list, archive_name: str) -> str:
+    """
+    Creates a zip archive containing the specified files.
+    
+    Args:
+        file_list (list): List of file paths to include in the archive
+        archive_name (str): Name of the output zip file
+        
+    Returns:
+        str: Success or error message
+    """
+    logger.info(f"Zipping {len(file_list)} files into {archive_name}")
     try:
         with zipfile.ZipFile(archive_name, 'w') as zipf:
             for file in file_list:
@@ -61,30 +63,41 @@ class MasterAgent:
     """
     def __init__(self):
         """Initializes the MasterAgent, logger, and specialized agents."""
-        # Initialize Logger (using the alias)
-        # Consider making the db path configurable
+        # Initialize Logger
         self.logger = ActivityLogger("logs/activity.db")
         logger.info("ActivityLogger initialized.")
 
         # Initialize specialized agents
         self.agents = {
-            "ai": AdvancedAI(), # Using default model "gpt2" for now
-            "project": ProjectAgent()
-            # Add other agents here as needed (e.g., image, file processing)
+            "ai": AdvancedAI(),  # Text generation agent
+            "project": ProjectAgent("data/projects.db"),  # Project management with persistent storage
+            "image": ImageAgent()  # Image processing agent
         }
         logger.info(f"Initialized agents: {list(self.agents.keys())}")
 
-        # Initialize AIEngine
+        # Initialize AIEngine for code generation
         self.ai_engine = AIEngine()
         logger.info("AIEngine initialized.")
+        
+        # Create necessary directories
+        os.makedirs("data", exist_ok=True)
+        os.makedirs("uploads", exist_ok=True)
+        logger.info("Ensured required directories exist.")
 
-        # Removed GitHub/OpenRouter/Update/Security agent initializations from previous versions
-
-    def validate_query(self, query: str) -> str | None:
-        """Validates the user query."""
+    def validate_query(self, query: str) -> Optional[str]:
+        """
+        Validates the user query.
+        
+        Args:
+            query (str): The query to validate
+            
+        Returns:
+            Optional[str]: Error message if validation fails, None if valid
+        """
         if not query or not query.strip():
             logger.warning("Validation failed: Empty query received.")
             return "الرجاء كتابة سؤال صحيح." # "Please write a valid question."
+        
         # Add more validation rules if needed
         return None
 
@@ -100,13 +113,19 @@ class MasterAgent:
             str: The response from the agent or a default message.
         """
         logger.info(f"Processing query for user '{user_id}': '{query}'")
+        
+        # Validate query
+        validation_error = self.validate_query(query)
+        if validation_error:
+            return validation_error
+            
         response = f"طلب غير معروف أو غير مدعوم: '{query}'" # Default response: "Unknown or unsupported request"
 
-        # --- Routing Logic based on v3.0 spec ---
+        # --- Routing Logic ---
         try:
             query_lower = query.lower() # Use lowercase for matching
 
-            # Route to AdvancedAI Agent (General Text Generation - kept for compatibility)
+            # --- Text Generation (AdvancedAI) ---
             if query.startswith("أنشئ نصًا:") or query_lower.startswith("generate text:"):
                 prompt = query.split(":", 1)[-1].strip()
                 if prompt and "ai" in self.agents:
@@ -114,10 +133,32 @@ class MasterAgent:
                     response = self.agents["ai"].generate(prompt)
                 else:
                     response = "خطأ: لم يتم توفير موجه نص أو وكيل الذكاء الاصطناعي غير متاح." # "Error: No text prompt provided or AI agent unavailable."
+            
+            # --- Advanced AI Model Management ---
+            elif "تغيير نموذج" in query or "switch model" in query_lower:
+                # Extract model name - simple approach
+                model_parts = query.split("إلى" if "إلى" in query else "to")
+                if len(model_parts) > 1:
+                    model_name = model_parts[1].strip()
+                    if "ai" in self.agents:
+                        logger.debug(f"Switching AI model to: '{model_name}'")
+                        response = self.agents["ai"].switch_model(model_name)
+                    else:
+                        response = "خطأ: وكيل الذكاء الاصطناعي غير متاح." # "Error: AI agent unavailable."
+                else:
+                    response = "خطأ: يرجى تحديد اسم النموذج. مثال: 'تغيير نموذج إلى gpt2-medium'" # "Error: Please specify model name. Example: 'switch model to gpt2-medium'"
+            
+            elif "عرض النماذج المتاحة" in query or "list available models" in query_lower:
+                if "ai" in self.agents:
+                    models = self.agents["ai"].get_available_models()
+                    model_info = "\n".join([f"- {name}: {info['description']} ({info['language']})" for name, info in models.items()])
+                    response = f"النماذج المتاحة:\n{model_info}" # "Available models:\n{model_info}"
+                else:
+                    response = "خطأ: وكيل الذكاء الاصطناعي غير متاح." # "Error: AI agent unavailable."
 
-            # Route to Project Agent
+            # --- Project Management ---
             elif "إنشاء مشروع" in query or "create project" in query_lower:
-                # Attempt to extract project name (simple example)
+                # Extract project name
                 parts = query.split()
                 project_name = parts[-1] if len(parts) > 1 else "مشروع_جديد" # "new_project"
                 if "project" in self.agents:
@@ -127,8 +168,7 @@ class MasterAgent:
                     response = "خطأ: وكيل إدارة المشاريع غير متاح." # "Error: Project management agent unavailable."
 
             elif "إضافة مهمة لمشروع" in query or "add task to project" in query_lower:
-                # Attempt to extract project name and task (simple example)
-                # Assumes format like "إضافة مهمة لمشروع ProjectName: Task Description"
+                # Extract project name and task
                 try:
                     parts = query.split(":", 1)
                     task_description = parts[1].strip()
@@ -143,8 +183,57 @@ class MasterAgent:
                     response = "خطأ: تنسيق أمر إضافة المهمة غير صحيح. استخدم 'إضافة مهمة لمشروع [اسم المشروع]: [وصف المهمة]'"
                     # "Error: Incorrect format for add task command. Use 'add task to project [Project Name]: [Task Description]'"
                     logger.warning(f"Incorrect format for add task command: {query}")
+            
+            elif "عرض المشاريع" in query or "list projects" in query_lower:
+                if "project" in self.agents:
+                    # Check if filtering by user
+                    if "الخاصة بي" in query or "my" in query_lower:
+                        projects = self.agents["project"].list_projects(user_id)
+                    else:
+                        projects = self.agents["project"].list_projects()
+                    
+                    if projects:
+                        project_list = "\n".join([f"- {p['name']} ({p['status']}) - {p['task_count']} مهام" for p in projects])
+                        response = f"المشاريع:\n{project_list}" # "Projects:\n{project_list}"
+                    else:
+                        response = "لا توجد مشاريع متاحة." # "No projects available."
+                else:
+                    response = "خطأ: وكيل إدارة المشاريع غير متاح." # "Error: Project management agent unavailable."
+            
+            elif "تفاصيل مشروع" in query or "project details" in query_lower:
+                # Extract project name
+                parts = query.split()
+                project_name = parts[-1] if len(parts) > 1 else ""
+                if project_name and "project" in self.agents:
+                    details = self.agents["project"].get_project_details(project_name)
+                    if isinstance(details, dict):
+                        # Format project details
+                        tasks_info = "\n".join([f"- {t.get('description', 'مهمة')} ({t.get('status', 'قيد الانتظار')})" for t in details.get("tasks", [])])
+                        response = f"مشروع: {details.get('name', project_name)}\n" \
+                                  f"المالك: {details.get('owner', 'غير معروف')}\n" \
+                                  f"الحالة: {details.get('status', 'غير معروف')}\n" \
+                                  f"تاريخ الإنشاء: {details.get('created_at', 'غير معروف')}\n" \
+                                  f"المهام:\n{tasks_info if tasks_info else 'لا توجد مهام'}"
+                    else:
+                        response = str(details) # Error message
+                else:
+                    response = "خطأ: يرجى تحديد اسم المشروع أو وكيل إدارة المشاريع غير متاح." # "Error: Please specify project name or project agent unavailable."
+            
+            elif "حذف مشروع" in query or "delete project" in query_lower:
+                # Extract project name
+                parts = query.split()
+                project_name = parts[-1] if len(parts) > 1 else ""
+                if project_name and "project" in self.agents:
+                    response = self.agents["project"].delete_project(project_name, user_id)
+                else:
+                    response = "خطأ: يرجى تحديد اسم المشروع أو وكيل إدارة المشاريع غير متاح." # "Error: Please specify project name or project agent unavailable."
 
-            # --- AI Dev Studio Routing ---
+            # --- Image Processing ---
+            elif any(term in query_lower or term in query for term in ["معالجة صورة", "process image", "edit image", "تعديل صورة"]):
+                response = "يرجى استخدام نقطة نهاية /api/edit_image لتحميل وتعديل الصورة. قم بتحديد الصورة ونوع المعالجة المطلوبة." 
+                # "Please use the /api/edit_image endpoint to upload and edit an image. Specify the image and the type of processing required."
+            
+            # --- AI Dev Studio ---
             elif query_lower.startswith("ai studio: generate"):
                 # Example: "AI Studio: Generate HTML for a login form"
                 try:
@@ -185,16 +274,19 @@ class MasterAgent:
                     response = "Error: Invalid AI Studio get project files command. Use 'AI Studio: Get Project Files [Project Name]'"
                     logger.warning(f"Invalid AI Studio get project files command: {query}")
 
+            # --- Help Command ---
+            elif "مساعدة" in query or "help" in query_lower:
+                response = self._generate_help_text()
+
             else:
                 # If no specific route matches, use a generic response
                 logger.info(f"No specific route matched for query: '{query}'. Providing generic response.")
-                # You could potentially call the NLP agent here as a fallback if needed
-                response = f"تم استلام طلبك '{query}' بواسطة {user_id}. لا يوجد إجراء محدد تم تكوينه لهذا الطلب."
-                         # "Your request '{query}' by {user_id} was received. No specific action configured for this request."
+                response = f"تم استلام طلبك '{query}' بواسطة {user_id}. لا يوجد إجراء محدد تم تكوينه لهذا الطلب. اكتب 'مساعدة' للحصول على قائمة بالأوامر المدعومة."
+                         # "Your request '{query}' by {user_id} was received. No specific action configured for this request. Type 'help' for a list of supported commands."
 
         except Exception as e:
             logger.error(f"Error processing query '{query}' for user '{user_id}': {e}", exc_info=True)
-            response = f"حدث خطأ داخلي أثناء معالجة طلبك." # "An internal error occurred while processing your request."
+            response = f"حدث خطأ داخلي أثناء معالجة طلبك: {str(e)}" # "An internal error occurred while processing your request: {str(e)}"
 
         # Log the final activity
         try:
@@ -206,6 +298,90 @@ class MasterAgent:
             logger.error(f"Failed to log activity for query '{query}': {log_e}", exc_info=True)
 
         return response
+    
+    def _generate_help_text(self) -> str:
+        """
+        Generates help text with available commands.
+        
+        Returns:
+            str: Formatted help text
+        """
+        help_text = """# الأوامر المدعومة
+
+## توليد النص
+- `أنشئ نصًا: [النص المطلوب]` - توليد نص باستخدام نموذج الذكاء الاصطناعي
+- `تغيير نموذج إلى [اسم النموذج]` - تغيير نموذج الذكاء الاصطناعي المستخدم
+- `عرض النماذج المتاحة` - عرض قائمة بنماذج الذكاء الاصطناعي المتاحة
+
+## إدارة المشاريع
+- `إنشاء مشروع [اسم المشروع]` - إنشاء مشروع جديد
+- `إضافة مهمة لمشروع [اسم المشروع]: [وصف المهمة]` - إضافة مهمة جديدة إلى مشروع
+- `عرض المشاريع` - عرض قائمة بجميع المشاريع
+- `عرض المشاريع الخاصة بي` - عرض قائمة بالمشاريع الخاصة بك
+- `تفاصيل مشروع [اسم المشروع]` - عرض تفاصيل مشروع محدد
+- `حذف مشروع [اسم المشروع]` - حذف مشروع محدد
+
+## معالجة الصور
+- `معالجة صورة` - الحصول على معلومات حول كيفية معالجة الصور
+
+## استوديو الذكاء الاصطناعي
+- `AI Studio: Generate HTML for [وصف]` - توليد كود HTML
+- `AI Studio: Generate CSS for [وصف]` - توليد كود CSS
+- `AI Studio: Generate JavaScript for [وصف]` - توليد كود JavaScript
+- `AI Studio: Generate Backend for [وصف]` - توليد كود الواجهة الخلفية
+- `AI Studio: Create Project [اسم المشروع]` - إنشاء مشروع جديد في استوديو الذكاء الاصطناعي
+- `AI Studio: Get Project Files [اسم المشروع]` - عرض ملفات مشروع في استوديو الذكاء الاصطناعي
+
+## عام
+- `مساعدة` - عرض هذه القائمة من الأوامر
+"""
+        return help_text
+    
+    async def process_image(self, query: str, image_bytes: bytes, user_id: str) -> Dict[str, Any]:
+        """
+        Processes an image with the specified query.
+        
+        Args:
+            query (str): The query describing the image processing
+            image_bytes (bytes): The raw image data
+            user_id (str): The ID of the user making the request
+            
+        Returns:
+            Dict[str, Any]: Result containing either a message or image path
+        """
+        logger.info(f"Processing image request from user '{user_id}': '{query}'")
+        
+        try:
+            if "image" not in self.agents:
+                logger.error("Image agent not available")
+                return {"message": "خطأ: وكيل معالجة الصور غير متاح."} # "Error: Image processing agent unavailable."
+            
+            # Process the image using the image agent
+            result = self.agents["image"].process(query, image_bytes)
+            
+            # Log the activity
+            self.logger.log_activity(
+                action=f"Image processing by {user_id}: {query}", 
+                result=str(result.get("message", "Success"))
+            )
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error processing image: {e}", exc_info=True)
+            return {"message": f"حدث خطأ أثناء معالجة الصورة: {str(e)}"}
+    
+    def close(self):
+        """Closes connections and performs cleanup."""
+        # Close the activity logger
+        if hasattr(self.logger, 'close'):
+            self.logger.close()
+            logger.info("Activity logger closed.")
+        
+        # Close the project agent's database connection
+        if "project" in self.agents and hasattr(self.agents["project"], 'close'):
+            self.agents["project"].close()
+            logger.info("Project agent database connection closed.")
 
     # --- Keep existing methods for updates and security ---
     def check_for_updates(self):
