@@ -1,7 +1,7 @@
 # ai_dev_studio/engine.py
 import logging
 import os
-from ai_agents import AdvancedAI
+from advanced_ai_agent import AdvancedAI
 
 logger = logging.getLogger(__name__)
 

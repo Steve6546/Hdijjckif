@@ -1,12 +1,16 @@
 # app.py (Main FastAPI Application - v3.0)
 import logging
 import os
+import io
 from datetime import timedelta
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 # FastAPI imports
-from fastapi import FastAPI, Request, HTTPException, Depends, status
+from fastapi import FastAPI, Request, HTTPException, Depends, status, File, UploadFile, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 # Import core components from the project
@@ -40,16 +44,31 @@ app = FastAPI(
     version="3.0.0"
 )
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+)
+
 # Initialize core components
 try:
     # Load environment variables
     load_dotenv()
     app_logger.info("Environment variables loaded successfully.")
 
-    master = MasterAgent() # Contains logger, AI agent, Project agent
+    # Create necessary directories
+    os.makedirs("logs", exist_ok=True)
+    os.makedirs("uploads", exist_ok=True)
+    os.makedirs("data", exist_ok=True)
+    os.makedirs("processed_images", exist_ok=True)
+    app_logger.info("Ensured required directories exist.")
+
+    master = MasterAgent() # Contains logger, AI agent, Project agent, Image agent
     cache = CacheManager() # Initialize Redis Cache Manager
     ai_engine = AIEngine() # Initialize the AI Engine for Dev Studio
-    # Removed old Update/Security agent initializations and threads
     app_logger.info("MasterAgent, CacheManager, and AIEngine initialized successfully.")
 except Exception as e:
     app_logger.critical(f"CRITICAL ERROR during initialization: {e}", exc_info=True)
@@ -66,6 +85,10 @@ class Token(BaseModel):
 
 class CodeGenerationInput(BaseModel):
     prompt: str
+
+class ImageProcessingInput(BaseModel):
+    query: str
+    image_path: str
 
 # --- API Endpoints ---
 
@@ -154,6 +177,98 @@ async def handle_query(data: QueryInput, current_user: str = Depends(get_current
 
         return {"answer": response}
 
+@app.post("/api/upload", tags=["File Management"])
+async def upload_files(
+    files: List[UploadFile] = File(...),
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Handles multiple file uploads.
+    Requires authentication.
+    """
+    app_logger.info(f"Received file upload request from user '{current_user}': {len(files)} files")
+    
+    try:
+        uploaded_files = []
+        for file in files:
+            # Create a unique filename to avoid collisions
+            file_extension = os.path.splitext(file.filename)[1]
+            unique_filename = f"{current_user}_{os.urandom(4).hex()}{file_extension}"
+            file_path = os.path.join("uploads", unique_filename)
+            
+            # Save the file
+            contents = await file.read()
+            with open(file_path, "wb") as f:
+                f.write(contents)
+            
+            uploaded_files.append({
+                "original_name": file.filename,
+                "saved_as": unique_filename,
+                "path": file_path,
+                "size": len(contents)
+            })
+        
+        # Log the activity
+        master.logger.log_activity(
+            action=f"File Upload by {current_user}: {len(files)} files",
+            result=f"Files saved: {', '.join([f['original_name'] for f in uploaded_files])}"
+        )
+        
+        app_logger.info(f"Successfully uploaded {len(files)} files for user '{current_user}'")
+        return {"message": f"تم تحميل {len(files)} ملفات بنجاح", "files": uploaded_files}
+    
+    except Exception as e:
+        app_logger.error(f"Error during file upload for user '{current_user}': {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"File upload failed: {e}")
+
+@app.post("/api/edit_image", tags=["Image Processing"])
+async def edit_image(
+    file: UploadFile = File(...),
+    query: str = Form(...),
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Processes an image according to the specified query.
+    Requires authentication.
+    """
+    app_logger.info(f"Received image edit request from user '{current_user}': '{query}'")
+    
+    try:
+        # Read the image file
+        image_bytes = await file.read()
+        
+        # Process the image using the MasterAgent's image processing capability
+        result = await master.process_image(query, image_bytes, current_user)
+        
+        # Check if the result contains an image path or just a message
+        if "image_path" in result:
+            # Return the processed image
+            with open(result["image_path"], "rb") as img_file:
+                processed_image = img_file.read()
+            
+            # Determine content type based on file extension
+            file_extension = os.path.splitext(result["image_path"])[1].lower()
+            content_type = "image/jpeg"  # Default
+            if file_extension == ".png":
+                content_type = "image/png"
+            elif file_extension == ".gif":
+                content_type = "image/gif"
+            
+            app_logger.info(f"Returning processed image for user '{current_user}'")
+            return StreamingResponse(
+                io.BytesIO(processed_image),
+                media_type=content_type,
+                headers={"X-Message": result.get("message", "Image processed successfully")}
+            )
+        else:
+            # Return just the message
+            app_logger.info(f"Returning message for user '{current_user}': {result.get('message', 'Unknown error')}")
+            return JSONResponse(content=result)
+    
+    except Exception as e:
+        app_logger.error(f"Error during image processing for user '{current_user}': {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Image processing failed: {e}")
+
 @app.get("/api/logs", tags=["Admin & Logging"])
 async def get_logs(
     # Use the specific admin dependency here
@@ -171,21 +286,48 @@ async def get_logs(
         app_logger.error(f"Error retrieving all logs for admin '{current_admin_user}': {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Could not retrieve activity logs.")
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # --- Root Endpoint ---
-@app.get("/", tags=["General"])
+@app.get("/", tags=["General"], response_class=HTMLResponse)
 def read_root():
-    """Provides a basic status message."""
-    return {"message": "Integrated Smart Agent System v3.0 is running."}
+    """Serves the main HTML page."""
+    with open("static/index.html", "r", encoding="utf-8") as f:
+        html_content = f.read()
+    return html_content
+
+@app.get("/api/info", tags=["General"])
+def get_api_info():
+    """Provides a basic status message about the API."""
+    return {
+        "message": "Integrated Smart Agent System v3.0 is running.",
+        "version": "3.0.0",
+        "endpoints": {
+            "query": "/api/query",
+            "image_processing": "/api/edit_image",
+            "file_upload": "/api/upload",
+            "code_generation": "/api/studio/generate_code",
+            "logs": "/api/logs (admin only)"
+        }
+    }
 
 # --- Cleanup ---
 @app.on_event("shutdown")
 def shutdown_event():
-    """Closes the activity logger connection on application shutdown."""
+    """Closes connections and performs cleanup on application shutdown."""
     app_logger.info("Application shutting down...")
-    if hasattr(master.logger, 'close'):
-        master.logger.close()
-        app_logger.info("Activity logger closed.")
-    # Add cleanup for other resources if needed (e.g., Redis pool if explicitly managed)
+    
+    # Close MasterAgent connections (includes logger and project agent)
+    if hasattr(master, 'close'):
+        master.close()
+        app_logger.info("MasterAgent resources closed.")
+    
+    # Close Redis cache connection if needed
+    if cache.redis_connection:
+        # Redis connections are typically managed by the connection pool
+        # but we can explicitly close if needed
+        app_logger.info("Redis cache connections will be closed by the pool.")
 
 # --- Main Execution ---
 if __name__ == "__main__":
@@ -206,6 +348,3 @@ if __name__ == "__main__":
     app_logger.info(f"Starting Uvicorn server on {app_host}:{app_port}")
     import uvicorn # Import here to avoid making it a top-level requirement if not running directly
     uvicorn.run(app, host=app_host, port=app_port)
-
-# Removed old endpoints: /api/upload, /api/edit_image
-# Remove old test code from main block

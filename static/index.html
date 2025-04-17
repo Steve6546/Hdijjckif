@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الوكلاء الذكي المتكامل 3.0</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-12 text-center mb-4">
+                <h1 class="main-title">نظام الوكلاء الذكي المتكامل 3.0</h1>
+                <p class="lead">منصة متكاملة للذكاء الاصطناعي مع دعم للغة العربية</p>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6 offset-md-3">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">استعلام الذكاء الاصطناعي</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="queryForm">
+                            <div class="mb-3">
+                                <label for="query" class="form-label">اكتب استعلامك هنا:</label>
+                                <textarea class="form-control" id="query" rows="3" placeholder="مثال: أنشئ نصًا: قصة قصيرة عن الصداقة"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">إرسال</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6 offset-md-3">
+                <div class="card d-none" id="responseCard">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">الرد</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="response" class="response-text"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6 offset-md-3">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">معالجة الصور</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="imageForm" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="imageQuery" class="form-label">وصف المعالجة:</label>
+                                <input type="text" class="form-control" id="imageQuery" placeholder="مثال: تطبيق تأثير ضبابي">
+                            </div>
+                            <div class="mb-3">
+                                <label for="imageFile" class="form-label">اختر صورة:</label>
+                                <input class="form-control" type="file" id="imageFile" accept="image/*">
+                            </div>
+                            <button type="submit" class="btn btn-info">معالجة الصورة</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6 offset-md-3">
+                <div class="card d-none" id="imageResponseCard">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">الصورة المعالجة</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <img id="processedImage" class="img-fluid" src="" alt="الصورة المعالجة">
+                        <p id="imageMessage" class="mt-2"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12 text-center">
+                <h3>الأوامر المدعومة</h3>
+                <div class="commands-list">
+                    <ul class="list-group text-start">
+                        <li class="list-group-item"><strong>أنشئ نصًا: [النص المطلوب]</strong> - توليد نص باستخدام نموذج الذكاء الاصطناعي</li>
+                        <li class="list-group-item"><strong>تغيير نموذج إلى [اسم النموذج]</strong> - تغيير نموذج الذكاء الاصطناعي المستخدم</li>
+                        <li class="list-group-item"><strong>عرض النماذج المتاحة</strong> - عرض قائمة بنماذج الذكاء الاصطناعي المتاحة</li>
+                        <li class="list-group-item"><strong>إنشاء مشروع [اسم المشروع]</strong> - إنشاء مشروع جديد</li>
+                        <li class="list-group-item"><strong>إضافة مهمة لمشروع [اسم المشروع]: [وصف المهمة]</strong> - إضافة مهمة جديدة إلى مشروع</li>
+                        <li class="list-group-item"><strong>عرض المشاريع</strong> - عرض قائمة بجميع المشاريع</li>
+                        <li class="list-group-item"><strong>تفاصيل مشروع [اسم المشروع]</strong> - عرض تفاصيل مشروع محدد</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+</html>

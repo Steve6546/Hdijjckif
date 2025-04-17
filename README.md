@@ -1,85 +1,81 @@
-<<<<<<< HEAD
-# BrainOS - Multi-Agent AI Orchestration System
+# BrainOS - نظام تنسيق الذكاء الاصطناعي متعدد الوكلاء
 
-BrainOS is a comprehensive multi-agent AI orchestration system that coordinates 20 specialized AI models through OpenRouter.ai. It functions as an "artificial brain" where multiple agents collaborate autonomously to process tasks and solve complex problems.
+BrainOS هو نظام شامل لتنسيق الذكاء الاصطناعي متعدد الوكلاء يقوم بتنسيق عمل مجموعة من الوكلاء المتخصصين. يعمل كـ "دماغ اصطناعي" حيث تتعاون وكلاء متعددة بشكل مستقل لمعالجة المهام وحل المشكلات المعقدة.
 
-## Key Features
+## الميزات الرئيسية
 
-- **20 Specialized AI Agents** - Each agent has unique capabilities and expertise
-- **Autonomous Collaboration** - Agents work together without requiring user confirmation at each step
-- **Multi-modal Processing** - Handles both text and image inputs
-- **Dynamic Agent Selection** - Automatically chooses the most appropriate agents for each task
-- **Performance Analytics** - Tracks and analyzes agent performance metrics
+- **وكلاء ذكاء اصطناعي متخصصون** - كل وكيل لديه قدرات وخبرات فريدة
+- **تعاون مستقل** - يعمل الوكلاء معًا دون الحاجة إلى تأكيد المستخدم في كل خطوة
+- **معالجة متعددة الوسائط** - يتعامل مع مدخلات النص والصور
+- **اختيار ديناميكي للوكلاء** - يختار تلقائيًا الوكلاء الأنسب لكل مهمة
+- **تحليلات الأداء** - يتتبع ويحلل مقاييس أداء الوكلاء
 
-## System Architecture
+## بنية النظام
 
-BrainOS consists of the following main components:
+يتكون BrainOS من المكونات الرئيسية التالية:
 
-1. **API Client** - Interfaces with OpenRouter.ai to access 20 different AI models
-2. **Agent Module** - Defines the specialized agents and their capabilities
-3. **Orchestrator** - Coordinates communication between agents and processes requests
-4. **UI Layer** - Streamlit-based user interface for interaction with the system
-5. **Utilities** - Helper functions for encoding, logging, and error handling
+1. **واجهة API** - واجهة للوصول إلى نماذج الذكاء الاصطناعي المختلفة
+2. **وحدة الوكلاء** - تحدد الوكلاء المتخصصين وقدراتهم
+3. **المنسق** - ينسق الاتصال بين الوكلاء ويعالج الطلبات
+4. **طبقة واجهة المستخدم** - واجهة مستخدم للتفاعل مع النظام
+5. **الأدوات المساعدة** - وظائف مساعدة للترميز والتسجيل ومعالجة الأخطاء
 
-## Getting Started
+## البدء
 
-### Prerequisites
+### المتطلبات الأساسية
 
 - Python 3.9+
-- OpenRouter API key
+- مفتاح API (إذا كان مطلوبًا)
 
-### Installation
+### التثبيت
 
-1. Clone the repository
-2. Install dependencies:
+1. استنساخ المستودع
+2. تثبيت التبعيات:
 ```
 pip install -r requirements.txt
 ```
-3. Create a `.env` file with your OpenRouter API key:
+3. إنشاء ملف `.env` مع المتغيرات البيئية المطلوبة:
 ```
-OPENROUTER_API_KEY=your_api_key_here
-```
-
-### Running the Application
-
-Start the Streamlit application:
-
-```
-streamlit run app.py
+SECRET_KEY=your_secret_key_here
 ```
 
-The application will be available at http://localhost:5000
+### تشغيل التطبيق
 
-## Agent Categories
+بدء تشغيل تطبيق FastAPI:
 
-The 20 specialized AI agents are organized into the following categories:
+```
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
 
-- **Perception** - Visual analysis and pattern recognition
-- **Analysis** - Reasoning, evaluation, and deep thinking
-- **Creation** - Design, generation, and creative output
-- **Validation** - Testing, security, and review
-- **Coordination** - Integration, organization, and synthesis
+سيكون التطبيق متاحًا على http://localhost:8000
 
-## Usage
+## فئات الوكلاء
 
-1. Enter text, upload an image, or both
-2. Select which agents to include (or let the system auto-select)
-3. Click "Process with AI Brain"
-4. View individual agent responses and the integrated result
+يتم تنظيم الوكلاء المتخصصين في الفئات التالية:
 
-## Autonomous Processing
+- **الإدراك** - التحليل البصري والتعرف على الأنماط
+- **التحليل** - التفكير والتقييم والتفكير العميق
+- **الإنشاء** - التصميم والتوليد والإخراج الإبداعي
+- **التحقق** - الاختبار والأمان والمراجعة
+- **التنسيق** - التكامل والتنظيم والتوليف
 
-BrainOS functions as a true "artificial brain" by:
+## الاستخدام
 
-1. Intelligently selecting appropriate agents for each task
-2. Processing information in parallel across multiple specialized agents
-3. Autonomously coordinating communication between agents
-4. Synthesizing multiple perspectives into integrated responses
-5. Operating with full autonomy without requiring user confirmation at intermediate steps
+1. أدخل نصًا أو ارفع صورة أو كليهما
+2. حدد الوكلاء المراد تضمينهم (أو دع النظام يختار تلقائيًا)
+3. انقر على "معالجة باستخدام دماغ الذكاء الاصطناعي"
+4. عرض استجابات الوكلاء الفردية والنتيجة المتكاملة
 
-## License
+## المعالجة المستقلة
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-=======
-# Hdijjckif
->>>>>>> ae282352286f8825c6191bf67ce7abc749ee2bef
+يعمل BrainOS كـ "دماغ اصطناعي" حقيقي من خلال:
+
+1. اختيار الوكلاء المناسبين بذكاء لكل مهمة
+2. معالجة المعلومات بالتوازي عبر وكلاء متخصصين متعددين
+3. تنسيق الاتصال بين الوكلاء بشكل مستقل
+4. توليف وجهات نظر متعددة في استجابات متكاملة
+5. العمل باستقلالية كاملة دون الحاجة إلى تأكيد المستخدم في الخطوات الوسيطة
+
+## الترخيص
+
+هذا المشروع مرخص بموجب ترخيص MIT - انظر ملف LICENSE للحصول على التفاصيل.
