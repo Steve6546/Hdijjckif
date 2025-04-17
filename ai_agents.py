@@ -67,16 +67,24 @@ class MasterAgent:
         self.logger = ActivityLogger("logs/activity.db")
         logger.info("ActivityLogger initialized.")
 
-        # Initialize specialized agents
+        # Initialize specialized agents with shared configuration
+        # Get OpenRouter API key from environment
+        openrouter_api_key = os.getenv("OPENROUTER_API_KEY", "")
+        default_model = os.getenv("ADVANCED_AI_MODEL", "google/gemini-2.5-pro-exp-03-25:free")
+        
+        # Initialize AI agent first
+        ai_agent = AdvancedAI(model_name=default_model)
+        
+        # Initialize agents with shared configuration
         self.agents = {
-            "ai": AdvancedAI(),  # Text generation agent
+            "ai": ai_agent,  # Text generation agent
             "project": ProjectAgent("data/projects.db"),  # Project management with persistent storage
-            "image": ImageAgent()  # Image processing agent
+            "image": ImageAgent(ai_agent=ai_agent)  # Image processing agent with AI capabilities
         }
         logger.info(f"Initialized agents: {list(self.agents.keys())}")
 
-        # Initialize AIEngine for code generation
-        self.ai_engine = AIEngine()
+        # Initialize AIEngine for code generation with the same AI model
+        self.ai_engine = AIEngine(ai_model=self.agents["ai"])
         logger.info("AIEngine initialized.")
         
         # Create necessary directories

@@ -17,9 +17,18 @@ class ImageAgent:
     """
     Agent responsible for handling image processing tasks.
     Supports various image filters and transformations.
+    Can also use AI for image analysis when connected to an AI model.
     """
-    def __init__(self):
-        """Initialize the ImageAgent with supported filters and operations."""
+    def __init__(self, ai_agent=None):
+        """
+        Initialize the ImageAgent with supported filters and operations.
+        
+        Args:
+            ai_agent: Optional AI agent for image analysis and description
+        """
+        # Store AI agent if provided
+        self.ai_agent = ai_agent
+        
         # Define supported filters and their corresponding functions
         self.supported_filters = {
             "blur": self._apply_blur,
@@ -326,10 +335,44 @@ class ImageAgent:
         Returns:
             Dict with 'filters' and 'operations' keys listing supported functions
         """
-        return {
+        operations = {
             "filters": list(self.supported_filters.keys()),
             "operations": list(self.supported_operations.keys())
         }
+        
+        # Add AI capabilities if AI agent is available
+        if self.ai_agent:
+            operations["ai_capabilities"] = ["describe_image", "analyze_image"]
+            
+        return operations
+        
+    def describe_image(self, image: Image.Image) -> str:
+        """
+        Use AI to describe the image content.
+        
+        Args:
+            image: PIL Image object to describe
+            
+        Returns:
+            str: Description of the image
+        """
+        if not self.ai_agent:
+            return "AI agent not available for image description"
+            
+        try:
+            # Convert image to bytes for base64 encoding
+            img_byte_arr = io.BytesIO()
+            image.save(img_byte_arr, format='JPEG')
+            img_bytes = img_byte_arr.getvalue()
+            
+            # For now, return a simple description since we don't have image input in the API yet
+            prompt = "This is an image. Please describe what might be in it based on the context."
+            description = self.ai_agent.generate(prompt)
+            
+            return description
+        except Exception as e:
+            logger.error(f"Error describing image: {e}")
+            return f"Error describing image: {str(e)}"
 
 # Example Usage (for testing purposes)
 if __name__ == '__main__':

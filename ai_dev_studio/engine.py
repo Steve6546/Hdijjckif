@@ -10,11 +10,21 @@ class AIEngine:
     AI engine for generating and managing web development project code.
     This version includes a basic in-memory project structure.
     """
-    def __init__(self):
-        """Initializes the AIEngine with the AdvancedAI agent and a basic project structure."""
+    def __init__(self, ai_model=None):
+        """
+        Initializes the AIEngine with the AdvancedAI agent and a basic project structure.
+        
+        Args:
+            ai_model: Optional pre-initialized AdvancedAI instance to use
+        """
         try:
-            self.ai_agent = AdvancedAI()
-            logger.info("AIEngine initialized with AdvancedAI agent.")
+            # Use provided AI model or create a new one
+            if ai_model is not None:
+                self.ai_agent = ai_model
+                logger.info("AIEngine initialized with provided AdvancedAI agent.")
+            else:
+                self.ai_agent = AdvancedAI()
+                logger.info("AIEngine initialized with new AdvancedAI agent.")
         except Exception as e:
             logger.error(f"Error initializing AIEngine: {e}", exc_info=True)
             self.ai_agent = None
