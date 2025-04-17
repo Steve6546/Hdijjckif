@@ -8,8 +8,9 @@ from typing import List, Dict, Any, Optional
 # FastAPI imports
 from fastapi import FastAPI, Request, HTTPException, Depends, status, File, UploadFile, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 # Import core components from the project
@@ -285,10 +286,20 @@ async def get_logs(
         app_logger.error(f"Error retrieving all logs for admin '{current_admin_user}': {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Could not retrieve activity logs.")
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # --- Root Endpoint ---
-@app.get("/", tags=["General"])
+@app.get("/", tags=["General"], response_class=HTMLResponse)
 def read_root():
-    """Provides a basic status message."""
+    """Serves the main HTML page."""
+    with open("static/index.html", "r", encoding="utf-8") as f:
+        html_content = f.read()
+    return html_content
+
+@app.get("/api/info", tags=["General"])
+def get_api_info():
+    """Provides a basic status message about the API."""
     return {
         "message": "Integrated Smart Agent System v3.0 is running.",
         "version": "3.0.0",
