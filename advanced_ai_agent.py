@@ -12,8 +12,23 @@ from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer, set_seed
 from openai import OpenAI
 
 # Get OpenRouter API key from environment
+# Try to read from .env file directly if environment variable is not set
+try:
+    with open(os.path.join(os.path.dirname(__file__), '.env'), 'r') as f:
+        for line in f:
+            if line.startswith('OPENROUTER_API_KEY='):
+                os.environ['OPENROUTER_API_KEY'] = line.split('=', 1)[1].strip()
+                break
+except Exception as e:
+    logger.warning(f"Could not read .env file: {e}")
+
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-print(f"OpenRouter API Key: {OPENROUTER_API_KEY}")
+# Print only the first few characters of the key for security
+if OPENROUTER_API_KEY:
+    masked_key = OPENROUTER_API_KEY[:10] + "..." + OPENROUTER_API_KEY[-5:]
+    print(f"OpenRouter API Key: {masked_key}")
+else:
+    print("OpenRouter API Key not found")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -244,6 +259,9 @@ class AdvancedAI:
                 base_url="https://openrouter.ai/api/v1",
                 api_key=self.api_key or "sk-or-v1-free",  # Use a placeholder if no key provided
             )
+            
+            # Add system message based on language
+            system_message = "أنت مساعد ذكي ومفيد. أجب بدقة وبشكل مفصل على أسئلة المستخدم." if is_arabic else "You are a helpful and intelligent assistant. Answer user questions accurately and in detail."
             
             # Create chat completion
             completion = client.chat.completions.create(
