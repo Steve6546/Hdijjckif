@@ -13,6 +13,7 @@ from openai import OpenAI
 
 # Get OpenRouter API key from environment
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+print(f"OpenRouter API Key: {OPENROUTER_API_KEY}")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -130,24 +131,27 @@ class AdvancedAI:
         Initializes the text generation pipeline. Downloads the model on first use if not cached.
 
         Args:
-            model_name (str, optional): The name of the Hugging Face model to use.
+            model_name (str, optional): The name of the model to use.
                                        If None, uses the model specified in the ADVANCED_AI_MODEL env var,
-                                       or defaults to "gpt2".
+                                       or defaults to a free model from OpenRouter.
         """
         # Get model from environment variable or use default
-        self.model_name = model_name or os.getenv("ADVANCED_AI_MODEL", "gpt2")
+        self.model_name = model_name or os.getenv("ADVANCED_AI_MODEL", "google/gemini-2.5-pro-exp-03-25:free")
         self.generator = None
         self.model_info = AVAILABLE_MODELS.get(self.model_name, {
-            "description": "Unknown model",
-            "language": "unknown",
-            "size": "unknown"
+            "description": "OpenRouter Model",
+            "language": "multi",
+            "size": "large",
+            "api": True
         })
         
         # Get API key for OpenRouter
         self.api_key = OPENROUTER_API_KEY
         
+        # No need to initialize a separate client, we'll use OpenAI client
+        
         # Check if we're using an API-based model
-        self.use_api = self.model_info.get("api", False)
+        self.use_api = self.model_info.get("api", False) or self.model_name.endswith(":free")
         
         if self.use_api and not self.api_key:
             logger.warning("API-based model selected but no API key provided. Set OPENROUTER_API_KEY environment variable.")
@@ -204,9 +208,9 @@ class AdvancedAI:
             logger.error(f"Error during text generation: {e}", exc_info=True)
             return f"خطأ أثناء توليد النص: {str(e)}" # "Error during text generation: {str(e)}"
             
-    def _generate_with_api(self, prompt: str, max_length: int = 150, temperature: float = 1.0, top_p: float = 0.9) -> str:
+    def _generate_with_api(self, prompt: str, max_length: int = 150, temperature: float = 0.7, top_p: float = 0.9) -> str:
         """
-        Generate text using OpenRouter API with OpenAI client.
+        Generate text using OpenRouter API with OpenRouterClient.
         
         Args:
             prompt: The text prompt to generate from
@@ -222,23 +226,17 @@ class AdvancedAI:
         # Detect language
         is_arabic = self._is_arabic_text(prompt)
         
-        # Add system message based on language
-        system_message = "أنت مساعد ذكي ومفيد. أجب بدقة وبشكل مفصل على أسئلة المستخدم." if is_arabic else "You are a helpful and intelligent assistant. Answer user questions accurately and in detail."
-        
-        # If model not specified in available models, use a default model based on language
-        if self.model_name not in AVAILABLE_MODELS:
-            if is_arabic:
-                model = "qwen/qwen2.5-vl-72b-instruct:free"  # Better for Arabic
-            else:
-                model = "google/gemini-2.5-pro-exp-03-25:free"  # Default free model
-            logger.info(f"Model {self.model_name} not found in available models, using {model} instead")
+        # Select appropriate model based on language if needed
+        if is_arabic and not self.model_name.startswith("qwen/"):
+            model = "qwen/qwen2.5-vl-72b-instruct:free"  # Better for Arabic
+            logger.info(f"Switching to Arabic-friendly model: {model}")
         else:
-            # Check if we need to use a free model
-            if not self.api_key or ":free" not in self.model_name:
-                model = "google/gemini-2.5-pro-exp-03-25:free"
-                logger.info(f"Using free model: {model} instead of {self.model_name}")
-            else:
-                model = self.model_name
+            model = self.model_name
+        
+        # Ensure model name ends with :free for free tier
+        if not model.endswith(":free"):
+            model = "google/gemini-2.5-pro-exp-03-25:free"
+            logger.info(f"Using free model: {model}")
         
         try:
             # Initialize OpenAI client with OpenRouter base URL
