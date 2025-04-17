@@ -9,7 +9,7 @@ import asyncio
 from typing import Dict, Any, List, Optional, Union
 
 from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer, set_seed
-from config import OPENROUTER_API_KEY
+from openai import OpenAI
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -47,6 +47,32 @@ AVAILABLE_MODELS = {
         "size": "medium",
         "task": "text-generation"
     },
+    # Free models (no API key required)
+    "google/gemini-2.5-pro-exp-03-25:free": {
+        "description": "Google Gemini 2.5 Pro (Free)",
+        "language": "multi",
+        "size": "large",
+        "task": "chat",
+        "api": True,
+        "free": True
+    },
+    "qwen/qwen2.5-vl-72b-instruct:free": {
+        "description": "Qwen 2.5 VL 72B (Free, good for Arabic)",
+        "language": "multi",
+        "size": "xlarge",
+        "task": "chat",
+        "api": True,
+        "free": True
+    },
+    "meta-llama/llama-3.3-70b-instruct:free": {
+        "description": "Meta Llama 3.3 70B Instruct (Free)",
+        "language": "multi",
+        "size": "xlarge",
+        "task": "chat",
+        "api": True,
+        "free": True
+    },
+    # Paid models (require API key)
     "openai/gpt-3.5-turbo": {
         "description": "OpenAI GPT-3.5 Turbo",
         "language": "multi",
@@ -177,7 +203,7 @@ class AdvancedAI:
             
     def _generate_with_api(self, prompt: str, max_length: int = 150, temperature: float = 1.0, top_p: float = 0.9) -> str:
         """
-        Generate text using OpenRouter API.
+        Generate text using OpenRouter API with OpenAI client.
         
         Args:
             prompt: The text prompt to generate from
@@ -196,60 +222,53 @@ class AdvancedAI:
         # Add system message based on language
         system_message = "أنت مساعد ذكي ومفيد. أجب بدقة وبشكل مفصل على أسئلة المستخدم." if is_arabic else "You are a helpful and intelligent assistant. Answer user questions accurately and in detail."
         
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://brainos.ai",  # Replace with your site
-            "X-Title": "BrainOS AI System"  # Replace with your app name
-        }
-        
-        # Format the messages for chat models
-        messages = [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": prompt}
-        ]
-        
         # If model not specified in available models, use a default model based on language
         if self.model_name not in AVAILABLE_MODELS:
             if is_arabic:
                 model = "qwen/qwen2.5-vl-72b-instruct:free"  # Better for Arabic
             else:
-                model = "meta-llama/llama-3.3-70b-instruct:free"  # Default model
+                model = "google/gemini-2.5-pro-exp-03-25:free"  # Default free model
             logger.info(f"Model {self.model_name} not found in available models, using {model} instead")
         else:
-            model = self.model_name
-        
-        data = {
-            "model": model,
-            "messages": messages,
-            "temperature": temperature,
-            "top_p": top_p,
-            "max_tokens": max_length
-        }
+            # Check if we need to use a free model
+            if not self.api_key or ":free" not in self.model_name:
+                model = "google/gemini-2.5-pro-exp-03-25:free"
+                logger.info(f"Using free model: {model} instead of {self.model_name}")
+            else:
+                model = self.model_name
         
         try:
-            response = requests.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers=headers,
-                json=data  # Use json parameter instead of data with json.dumps
+            # Initialize OpenAI client with OpenRouter base URL
+            client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=self.api_key or "sk-or-v1-free",  # Use a placeholder if no key provided
             )
             
-            if response.status_code == 200:
-                result = response.json()
-                if "choices" in result and len(result["choices"]) > 0:
-                    generated_text = result["choices"][0]["message"]["content"]
-                    logger.info(f"Successfully generated text with OpenRouter API, length: {len(generated_text)}")
-                    return generated_text
-                else:
-                    logger.error(f"Unexpected response format from OpenRouter API: {result}")
-                    return f"خطأ: تنسيق استجابة غير متوقع من API" if is_arabic else f"Error: Unexpected response format from API"
-            else:
-                logger.error(f"OpenRouter API error: {response.status_code} - {response.text}")
-                return f"خطأ: API أعاد رمز الحالة {response.status_code}" if is_arabic else f"Error: API returned status code {response.status_code}"
+            # Create chat completion
+            completion = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=temperature,
+                top_p=top_p,
+                max_tokens=max_length,
+                extra_headers={
+                    "HTTP-Referer": os.getenv("SITE_URL", "https://your-site.com"),
+                    "X-Title": os.getenv("SITE_NAME", "AI Brain Orchestration"),
+                }
+            )
+            
+            # Extract generated text
+            generated_text = completion.choices[0].message.content
+            logger.info(f"Successfully generated text with OpenRouter API, length: {len(generated_text)}")
+            return generated_text
                 
         except Exception as e:
             logger.error(f"Error calling OpenRouter API: {e}", exc_info=True)
-            return f"Error calling AI service: {str(e)}"
+            error_msg = f"خطأ أثناء الاتصال بخدمة الذكاء الاصطناعي: {str(e)}" if is_arabic else f"Error calling AI service: {str(e)}"
+            return error_msg
 
     def switch_model(self, model_name: str) -> str:
         """

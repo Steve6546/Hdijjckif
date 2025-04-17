@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شرح استخدام OpenRouter - نظام الوكلاء الذكي</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .code-block {
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            direction: ltr;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        .highlight {
+            background-color: #ffffcc;
+            padding: 2px 4px;
+        }
+        .card {
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            background-color: #0d6efd;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        h1, h2, h3 {
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12 text-center">
+                <h1>شرح استخدام OpenRouter مع نظام الوكلاء الذكي</h1>
+                <p class="lead">دليل المطور لاستخدام النماذج المجانية والمدفوعة</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="mb-0">مقدمة</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>يدعم نظام الوكلاء الذكي الآن استخدام OpenRouter للوصول إلى مجموعة متنوعة من نماذج الذكاء الاصطناعي، بما في ذلك:</p>
+                        <ul>
+                            <li><strong>النماذج المجانية:</strong> مثل Google Gemini و Llama 3.3 و Qwen 2.5</li>
+                            <li><strong>النماذج المدفوعة:</strong> مثل GPT-4 و Claude 3 و Mistral Large (تتطلب مفتاح API مدفوع)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="mb-0">كيفية استخدام النماذج المجانية</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>يمكنك استخدام النماذج المجانية مباشرة دون الحاجة إلى مفتاح API حقيقي. النظام يستخدم تلقائيًا النماذج المجانية عندما:</p>
+                        <ol>
+                            <li>لا يتم توفير مفتاح API</li>
+                            <li>يتم تحديد نموذج مجاني صراحةً (يحتوي على <code>:free</code> في اسمه)</li>
+                        </ol>
+                        
+                        <p>النماذج المجانية المتاحة:</p>
+                        <ul>
+                            <li><code>google/gemini-2.5-pro-exp-03-25:free</code> - نموذج Google Gemini 2.5 Pro</li>
+                            <li><code>qwen/qwen2.5-vl-72b-instruct:free</code> - نموذج Qwen 2.5 (جيد للغة العربية)</li>
+                            <li><code>meta-llama/llama-3.3-70b-instruct:free</code> - نموذج Meta Llama 3.3</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="mb-0">كيفية استخدام النماذج المدفوعة</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>لاستخدام النماذج المدفوعة، تحتاج إلى:</p>
+                        <ol>
+                            <li>الحصول على مفتاح API من <a href="https://openrouter.ai/keys" target="_blank">OpenRouter</a></li>
+                            <li>إضافة المفتاح إلى ملف <code>.env</code> في المشروع</li>
+                        </ol>
+                        
+                        <div class="code-block">
+                            <pre># في ملف .env
+OPENROUTER_API_KEY=sk-or-v1-your-actual-key-here</pre>
+                        </div>
+                        
+                        <p>النماذج المدفوعة المتاحة:</p>
+                        <ul>
+                            <li><code>openai/gpt-4</code> - نموذج OpenAI GPT-4</li>
+                            <li><code>anthropic/claude-3-opus</code> - نموذج Anthropic Claude 3 Opus</li>
+                            <li><code>anthropic/claude-3-sonnet</code> - نموذج Anthropic Claude 3 Sonnet</li>
+                            <li><code>meta-llama/llama-3-70b-instruct</code> - نموذج Meta Llama 3 70B</li>
+                            <li><code>mistralai/mistral-large</code> - نموذج Mistral Large</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="mb-0">كيفية تغيير النموذج المستخدم</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>يمكنك تغيير النموذج المستخدم بإحدى الطريقتين:</p>
+                        
+                        <h4>1. من خلال واجهة المستخدم</h4>
+                        <p>أرسل الأمر التالي في نموذج الاستعلام:</p>
+                        <div class="code-block">
+                            <pre>تغيير نموذج إلى google/gemini-2.5-pro-exp-03-25:free</pre>
+                        </div>
+                        
+                        <h4>2. من خلال ملف .env</h4>
+                        <p>قم بتعديل المتغير <code>ADVANCED_AI_MODEL</code> في ملف <code>.env</code>:</p>
+                        <div class="code-block">
+                            <pre>ADVANCED_AI_MODEL=google/gemini-2.5-pro-exp-03-25:free</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="mb-0">للمطورين: استخدام OpenRouter في الكود</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>يمكنك استخدام OpenRouter مباشرة في الكود الخاص بك باستخدام مكتبة OpenAI:</p>
+                        
+                        <div class="code-block">
+                            <pre>from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key="YOUR_OPENROUTER_API_KEY",
+)
+
+completion = client.chat.completions.create(
+    model="google/gemini-2.5-pro-exp-03-25:free",  # نموذج مجاني
+    messages=[
+        {
+            "role": "user",
+            "content": "اشرح لي كيفية استخدام OpenRouter"
+        }
+    ],
+    extra_headers={
+        "HTTP-Referer": "https://your-site.com",  # اختياري
+        "X-Title": "MyProjectName",               # اختياري
+    }
+)
+
+print(completion.choices[0].message.content)</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="mb-0">ملاحظات هامة</h2>
+                    </div>
+                    <div class="card-body">
+                        <ul>
+                            <li>المفتاح المجاني يعمل فقط مع النماذج المجانية المحددة</li>
+                            <li>تأكد من كتابة اسم النموذج بدقة كما هو موجود في OpenRouter</li>
+                            <li>يتم تحديث قائمة النماذج المجانية من وقت لآخر، تحقق من <a href="https://openrouter.ai/docs" target="_blank">وثائق OpenRouter</a> للحصول على أحدث المعلومات</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4 mb-5">
+                    <a href="/" class="btn btn-primary">العودة إلى الصفحة الرئيسية</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

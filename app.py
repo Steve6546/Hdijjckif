@@ -297,6 +297,13 @@ def read_root():
         html_content = f.read()
     return html_content
 
+@app.get("/openrouter", tags=["General"], response_class=HTMLResponse)
+def openrouter_demo():
+    """Serves the OpenRouter demo page."""
+    with open("static/openrouter_demo.html", "r", encoding="utf-8") as f:
+        html_content = f.read()
+    return html_content
+
 @app.get("/api/info", tags=["General"])
 def get_api_info():
     """Provides a basic status message about the API."""
