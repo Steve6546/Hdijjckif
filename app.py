@@ -370,7 +370,7 @@ if __name__ == "__main__":
     # Run the FastAPI app with uvicorn
     # Consider environment variables for host and port as well
     app_host = os.getenv("HOST", "0.0.0.0")
-    app_port = int(os.getenv("PORT", 8000))
+    app_port = int(os.getenv("PORT", 12000))
     app_logger.info(f"Starting Uvicorn server on {app_host}:{app_port}")
     import uvicorn # Import here to avoid making it a top-level requirement if not running directly
-    uvicorn.run(app, host=app_host, port=app_port)
+    uvicorn.run(app, host=app_host, port=app_port, access_log=True)

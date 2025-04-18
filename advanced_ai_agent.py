@@ -8,31 +8,34 @@ import aiohttp
 import asyncio
 from typing import Dict, Any, List, Optional, Union
 
-from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer, set_seed
-from openai import OpenAI
-
-# Get OpenRouter API key from environment
-# Try to read from .env file directly if environment variable is not set
+# Try to import transformers, but handle the case where it's not installed
 try:
-    with open(os.path.join(os.path.dirname(__file__), '.env'), 'r') as f:
-        for line in f:
-            if line.startswith('OPENROUTER_API_KEY='):
-                os.environ['OPENROUTER_API_KEY'] = line.split('=', 1)[1].strip()
-                break
-except Exception as e:
-    logger.warning(f"Could not read .env file: {e}")
-
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-# Print only the first few characters of the key for security
-if OPENROUTER_API_KEY:
-    masked_key = OPENROUTER_API_KEY[:10] + "..." + OPENROUTER_API_KEY[-5:]
-    print(f"OpenRouter API Key: {masked_key}")
-else:
-    print("OpenRouter API Key not found")
+    from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer, set_seed
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    TRANSFORMERS_AVAILABLE = False
+    print("Warning: transformers module not available. Using API-only mode.")
+from openai import OpenAI
+from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get OpenRouter API key from environment
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+
+# If no API key found, use a default one (for demo purposes)
+if not OPENROUTER_API_KEY:
+    OPENROUTER_API_KEY = "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"
+    logger.warning("Using default OpenRouter API key. For production, set OPENROUTER_API_KEY environment variable.")
+
+# Print only the first few characters of the key for security
+masked_key = OPENROUTER_API_KEY[:10] + "..." + OPENROUTER_API_KEY[-5:] if len(OPENROUTER_API_KEY) > 15 else "***"
+logger.info(f"OpenRouter API Key: {masked_key}")
 
 # Dictionary of available models with their descriptions and properties
 AVAILABLE_MODELS = {
@@ -170,6 +173,12 @@ class AdvancedAI:
         
         if self.use_api and not self.api_key:
             logger.warning("API-based model selected but no API key provided. Set OPENROUTER_API_KEY environment variable.")
+            
+        # Check if transformers is available for local models
+        if not self.use_api and not TRANSFORMERS_AVAILABLE:
+            logger.warning(f"Transformers module not available. Forcing API mode for model {self.model_name}")
+            self.use_api = True
+            self.model_name = "google/gemini-2.5-pro-exp-03-25:free"
             
         # For local models, we'll skip loading the actual model to save time in demo mode
         if not self.use_api:

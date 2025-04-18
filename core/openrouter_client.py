@@ -209,18 +209,3 @@ class OpenRouterClient:
         except Exception as e:
             logger.error(f"Error getting available models: {e}")
             return []
-
-# Example usage
-if __name__ == "__main__":
-    client = OpenRouterClient()
-    
-    # Test text generation
-    result = client.generate_text("اكتب قصة قصيرة عن القمر")
-    print(f"Generated text: {result}")
-    
-    # Test image analysis
-    image_result = client.analyze_image(
-        "اشرح ما تراه في هذه الصورة",
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
-    )
-    print(f"Image analysis: {image_result}")
